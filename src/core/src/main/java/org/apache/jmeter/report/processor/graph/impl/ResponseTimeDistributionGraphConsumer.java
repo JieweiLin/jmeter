@@ -15,12 +15,12 @@
  * limitations under the License.
  *
  */
+
 package org.apache.jmeter.report.processor.graph.impl;
 
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 
-import org.apache.jmeter.report.core.Sample;
 import org.apache.jmeter.report.processor.MapResultData;
 import org.apache.jmeter.report.processor.SumAggregatorFactory;
 import org.apache.jmeter.report.processor.ValueResultData;
@@ -52,8 +52,7 @@ public class ResponseTimeDistributionGraphConsumer extends
     }
 
     /**
-     * @param granularity
-     *            the granularity to set
+     * @param granularity the granularity to set
      */
     public final void setGranularity(long granularity) {
         this.granularity = granularity;
@@ -67,13 +66,9 @@ public class ResponseTimeDistributionGraphConsumer extends
      */
     @Override
     protected final GraphKeysSelector createKeysSelector() {
-        return new GraphKeysSelector() {
-
-            @Override
-            public Double select(Sample sample) {
-                long elapsed = sample.getElapsedTime();
-                return Double.valueOf((double) elapsed - elapsed % granularity);
-            }
+        return sample -> {
+            long elapsed = sample.getElapsedTime();
+            return (double) elapsed - elapsed % granularity;
         };
     }
 
@@ -85,14 +80,12 @@ public class ResponseTimeDistributionGraphConsumer extends
      */
     @Override
     protected Map<String, GroupInfo> createGroupInfos() {
-        HashMap<String, GroupInfo> groupInfos = new HashMap<>(1);
-
-        groupInfos.put(AbstractGraphConsumer.DEFAULT_GROUP, new GroupInfo(
-                new SumAggregatorFactory(), new NameSeriesSelector(),
-                // We include Transaction Controller results
-                new CountValueSelector(false), false, false));
-
-        return groupInfos;
+        return Collections.singletonMap(
+                AbstractGraphConsumer.DEFAULT_GROUP,
+                new GroupInfo(
+                        new SumAggregatorFactory(), new NameSeriesSelector(),
+                        // We include Transaction Controller results
+                        new CountValueSelector(false), false, false));
     }
 
     /*
@@ -105,6 +98,6 @@ public class ResponseTimeDistributionGraphConsumer extends
     protected void initializeExtraResults(MapResultData parentResult) {
         parentResult.setResult(
                 AbstractOverTimeGraphConsumer.RESULT_CTX_GRANULARITY,
-                new ValueResultData(Long.valueOf(granularity)));
+                new ValueResultData(granularity));
     }
 }

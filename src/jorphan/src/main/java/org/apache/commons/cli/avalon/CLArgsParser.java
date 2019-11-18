@@ -9,13 +9,13 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed  under the  License is distributed on an "AS IS" BASIS,
- * WITHOUT  WARRANTIES OR CONDITIONS  OF ANY KIND, either  express  or
- * implied.
- *
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
+
 package org.apache.commons.cli.avalon;
 
 import java.text.ParseException;
@@ -125,7 +125,7 @@ public final class CLArgsParser {
      * @see CLOption
      */
     public final CLOption getArgumentById(final int id) {
-        return this.optionIndex.get(Integer.valueOf(id));
+        return this.optionIndex.get(id);
     }
 
     /**
@@ -662,7 +662,7 @@ public final class CLArgsParser {
         for (final CLOption option : this.options) {
             final CLOptionDescriptor optionDescriptor = getDescriptorFor(option.getDescriptor().getId());
 
-            this.optionIndex.put(Integer.valueOf(option.getDescriptor().getId()), option);
+            this.optionIndex.put(option.getDescriptor().getId(), option);
 
             if (null != optionDescriptor && null != optionDescriptor.getName()) {
                 this.optionIndex.put(optionDescriptor.getName(), option);

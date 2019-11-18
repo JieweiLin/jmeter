@@ -6,19 +6,16 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 
-/*
- * Created on May 15, 2004
- */
 package org.apache.jmeter.protocol.jdbc.config;
 
 import java.beans.PropertyDescriptor;
@@ -40,12 +37,12 @@ public class DataSourceElementBeanInfo extends BeanInfoSupport {
     private static final Map<String,Integer> TRANSACTION_ISOLATION_MAP = new HashMap<>(5);
     static {
         // Will use default isolation
-        TRANSACTION_ISOLATION_MAP.put("DEFAULT", Integer.valueOf(-1));
-        TRANSACTION_ISOLATION_MAP.put("TRANSACTION_NONE", Integer.valueOf(Connection.TRANSACTION_NONE));
-        TRANSACTION_ISOLATION_MAP.put("TRANSACTION_READ_COMMITTED", Integer.valueOf(Connection.TRANSACTION_READ_COMMITTED));
-        TRANSACTION_ISOLATION_MAP.put("TRANSACTION_READ_UNCOMMITTED", Integer.valueOf(Connection.TRANSACTION_READ_UNCOMMITTED));
-        TRANSACTION_ISOLATION_MAP.put("TRANSACTION_REPEATABLE_READ", Integer.valueOf(Connection.TRANSACTION_REPEATABLE_READ));
-        TRANSACTION_ISOLATION_MAP.put("TRANSACTION_SERIALIZABLE", Integer.valueOf(Connection.TRANSACTION_SERIALIZABLE));
+        TRANSACTION_ISOLATION_MAP.put("DEFAULT", -1);
+        TRANSACTION_ISOLATION_MAP.put("TRANSACTION_NONE", Connection.TRANSACTION_NONE);
+        TRANSACTION_ISOLATION_MAP.put("TRANSACTION_READ_COMMITTED", Connection.TRANSACTION_READ_COMMITTED);
+        TRANSACTION_ISOLATION_MAP.put("TRANSACTION_READ_UNCOMMITTED", Connection.TRANSACTION_READ_UNCOMMITTED);
+        TRANSACTION_ISOLATION_MAP.put("TRANSACTION_REPEATABLE_READ", Connection.TRANSACTION_REPEATABLE_READ);
+        TRANSACTION_ISOLATION_MAP.put("TRANSACTION_SERIALIZABLE", Connection.TRANSACTION_SERIALIZABLE);
     }
 
     public DataSourceElementBeanInfo() {
@@ -58,7 +55,7 @@ public class DataSourceElementBeanInfo extends BeanInfoSupport {
 
         createPropertyGroup("keep-alive", new String[] { "keepAlive", "connectionAge", "checkQuery" });
 
-        createPropertyGroup("database", new String[] { "dbUrl", "driver", "username", "password" });
+        createPropertyGroup("database", new String[] { "dbUrl", "driver", "username", "password", "connectionProperties" });
 
         PropertyDescriptor p = property("dataSource");
         p.setValue(NOT_UNDEFINED, Boolean.TRUE);
@@ -111,6 +108,9 @@ public class DataSourceElementBeanInfo extends BeanInfoSupport {
         p = property("password", TypeEditor.PasswordEditor);
         p.setValue(NOT_UNDEFINED, Boolean.TRUE);
         p.setValue(DEFAULT, "");
+        p = property("connectionProperties");
+        p.setValue(NOT_UNDEFINED, Boolean.TRUE);
+        p.setValue(DEFAULT, "");
     }
 
     /**
@@ -137,7 +137,7 @@ public class DataSourceElementBeanInfo extends BeanInfoSupport {
                     log.warn("Illegal transaction isolation configuration '" + tag + "'");
                 }
             } else {
-                return isolationMode.intValue();
+                return isolationMode;
             }
         }
         return -1;

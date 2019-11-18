@@ -23,9 +23,18 @@ subprojects {
     }
 }
 
+project("bolt") {
+    dependencies {
+        implementation("org.neo4j.driver:neo4j-java-driver")
+        implementation("org.apache.commons:commons-lang3")
+        implementation("com.fasterxml.jackson.core:jackson-core")
+        implementation("com.fasterxml.jackson.core:jackson-databind")
+    }
+}
+
 project("ftp") {
     dependencies {
-        implementation("commons-net:commons-net:3.6")
+        implementation("commons-net:commons-net")
         implementation("commons-io:commons-io") {
             because("IOUtils")
         }
@@ -63,20 +72,22 @@ project("http") {
         implementation("org.jsoup:jsoup")
         implementation("oro:oro")
         implementation("commons-collections:commons-collections")
-        implementation("commons-net:commons-net:3.6")
-        implementation("com.helger:ph-commons:9.2.1") {
+        implementation("commons-net:commons-net")
+        implementation("com.helger:ph-commons") {
             // We don't really need to use/distribute jsr305
             exclude("com.google.code.findbugs", "jsr305")
         }
-        implementation("com.helger:ph-css:6.1.1") {
+        implementation("com.helger:ph-css") {
             // We don't really need to use/distribute jsr305
             exclude("com.google.code.findbugs", "jsr305")
         }
-        implementation("dnsjava:dnsjava:2.1.8")
-        implementation("org.apache.httpcomponents:httpmime:4.5.8")
-        implementation("org.brotli:dec:0.1.2")
+        implementation("dnsjava:dnsjava")
+        implementation("org.apache.httpcomponents:httpmime")
+        implementation("org.apache.httpcomponents:httpcore")
+        implementation("org.brotli:dec")
+        testImplementation(testFixtures(project(":src:testkit-wiremock")))
+        testImplementation("com.github.tomakehurst:wiremock-jre8")
     }
-
 }
 
 project("java") {
@@ -92,7 +103,7 @@ project("java") {
 
 project("jdbc") {
     dependencies {
-        implementation("org.apache.commons:commons-dbcp2:2.5.0")
+        implementation("org.apache.commons:commons-dbcp2")
         implementation("org.apache.commons:commons-lang3") {
             because("StringUtils, ObjectUtils")
         }
@@ -110,7 +121,7 @@ project("jms") {
         }
         // TODO: technically speaking, jms_1.1_spec should be compileOnly
         // since we either include a JMS implementation or we can't use JMS at all
-        implementation("org.apache.geronimo.specs:geronimo-jms_1.1_spec:1.1.1")
+        implementation("org.apache.geronimo.specs:geronimo-jms_1.1_spec")
         implementation("org.apache.commons:commons-lang3") {
             because("StringUtils")
         }
@@ -122,7 +133,7 @@ project("jms") {
 
 project("junit") {
     dependencies {
-        api("junit:junit:4.12")
+        api("junit:junit")
         implementation("org.apache.commons:commons-lang3") {
             because("ArrayUtils")
         }
@@ -134,7 +145,7 @@ project("junit") {
 
 project("junit-sample") {
     dependencies {
-        api("junit:junit:4.12")
+        api("junit:junit")
     }
 }
 
@@ -151,7 +162,7 @@ project("ldap") {
 
 project("mail") {
     dependencies {
-        api("javax.mail:mail:1.5.0-b01") {
+        api("javax.mail:mail") {
             exclude("javax.activation", "activation")
         }
         // There's no javax.activation:activation:1.2.0, so we use com.sun...
@@ -170,7 +181,7 @@ project("mail") {
 
 project("mongodb") {
     dependencies {
-        api("org.mongodb:mongo-java-driver:2.11.3")
+        api("org.mongodb:mongo-java-driver")
         implementation("org.apache.commons:commons-lang3") {
             because("StringUtils")
         }

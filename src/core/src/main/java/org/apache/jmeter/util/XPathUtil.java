@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -75,6 +76,7 @@ import net.sf.saxon.s9api.XdmValue;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
+
 /**
  * This class provides a few utility methods for dealing with XML/XPath.
  */
@@ -115,12 +117,13 @@ public class XPathUtil {
      * @return javax.xml.parsers.DocumentBuilderFactory
      */
     private static synchronized DocumentBuilderFactory makeDocumentBuilderFactory(boolean validate, boolean whitespace,
-            boolean namespace) {
+            boolean namespace) throws ParserConfigurationException {
         if (XPathUtil.documentBuilderFactory == null || documentBuilderFactory.isValidating() != validate
                 || documentBuilderFactory.isNamespaceAware() != namespace
                 || documentBuilderFactory.isIgnoringElementContentWhitespace() != whitespace) {
             // configure the document builder factory
             documentBuilderFactory = DocumentBuilderFactory.newInstance();
+            documentBuilderFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
             documentBuilderFactory.setValidating(validate);
             documentBuilderFactory.setNamespaceAware(namespace);
             documentBuilderFactory.setIgnoringElementContentWhitespace(whitespace);
@@ -142,14 +145,8 @@ public class XPathUtil {
             throws ParserConfigurationException {
         DocumentBuilder builder = makeDocumentBuilderFactory(validate, whitespace, namespace).newDocumentBuilder();
         builder.setErrorHandler(new MyErrorHandler(validate, false));
-        if (!downloadDTDs){
-            EntityResolver er = new EntityResolver(){
-                @Override
-                public InputSource resolveEntity(String publicId, String systemId)
-                        throws SAXException, IOException {
-                    return new InputSource(new ByteArrayInputStream(new byte[]{}));
-                }
-            };
+        if (!downloadDTDs) {
+            EntityResolver er = (publicId, systemId) -> new InputSource(new ByteArrayInputStream(new byte[0]));
             builder.setEntityResolver(er);
         }
         return builder;
@@ -315,7 +312,9 @@ public class XPathUtil {
     private static String getNodeContent(Node node) {
         StringWriter sw = new StringWriter();
         try {
-            Transformer t = TransformerFactory.newInstance().newTransformer();
+            TransformerFactory factory = TransformerFactory.newInstance();
+            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            Transformer t = factory.newTransformer();
             t.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
             t.transform(new DOMSource(node), new StreamResult(sw));
         } catch (TransformerException e) {
@@ -708,23 +707,21 @@ public class XPathUtil {
                    if (length == 0) {
                        resultOfEval = false;
                    } else if (xObject.getType() == XObject.CLASS_BOOLEAN) {
-                       resultOfEval = Boolean.valueOf(nodes.itemAt(0).getStringValue());
+                       resultOfEval = Boolean.parseBoolean(nodes.itemAt(0).getStringValue());
                    }
                    result.setFailure(isNegated ? resultOfEval : !resultOfEval);
                    result.setFailureMessage(
                            isNegated ? "Nodes Matched for " + xPathQuery : "No Nodes Matched for " + xPathQuery);
                } catch (ParserConfigurationException | TransformerException e) { // NOSONAR Exception handled by return
                    result.setError(true);
-                   result.setFailureMessage(new StringBuilder("Exception: ").append(e.getMessage()).append(" for:")
-                           .append(xPathQuery).toString());
+                   result.setFailureMessage("Exception: " + e.getMessage() + " for:" + xPathQuery);
                } finally {
                    if (selector != null) {
                        try {
                            selector.getUnderlyingXPathContext().setContextItem(null);
                        } catch (Exception e) { // NOSONAR Ignored on purpose
                            result.setError(true);
-                           result.setFailureMessage(new StringBuilder("Exception: ").append(e.getMessage())
-                                   .append(" for:").append(xPathQuery).toString());
+                           result.setFailureMessage("Exception: " + e.getMessage() + " for:" + xPathQuery);
                        }
                    }
                }
@@ -739,7 +736,9 @@ public class XPathUtil {
      */
     public static String formatXml(String xml){
         try {
-            Transformer serializer= TransformerFactory.newInstance().newTransformer();
+            TransformerFactory factory = TransformerFactory.newInstance();
+            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            Transformer serializer= factory.newTransformer();
             serializer.setOutputProperty(OutputKeys.INDENT, "yes");
             serializer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
             Source xmlSource = new SAXSource(new InputSource(new StringReader(xml)));

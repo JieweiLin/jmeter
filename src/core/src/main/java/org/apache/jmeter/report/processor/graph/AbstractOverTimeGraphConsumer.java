@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  */
+
 package org.apache.jmeter.report.processor.graph;
 
 import java.util.Map;
@@ -98,7 +99,7 @@ public abstract class AbstractOverTimeGraphConsumer extends
     @Override
     protected void initializeExtraResults(MapResultData parentResult) {
         parentResult.setResult(RESULT_CTX_GRANULARITY, new ValueResultData(
-                Long.valueOf(granularity)));
+                granularity));
     }
 
     @Override

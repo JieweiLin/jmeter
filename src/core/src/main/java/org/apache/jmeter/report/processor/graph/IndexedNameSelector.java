@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  */
+
 package org.apache.jmeter.report.processor.graph;
 
 import java.util.LinkedList;
@@ -57,7 +58,7 @@ public class IndexedNameSelector implements GraphKeysSelector {
             names.addLast(name);
             index = names.size() - 1;
         }
-        return Double.valueOf(index);
+        return (double) index;
     }
 
 }

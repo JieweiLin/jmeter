@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  */
+
 package org.apache.jmeter.report.processor;
 
 import org.apache.jmeter.report.core.Sample;
@@ -71,10 +72,10 @@ public class RequestsSummaryConsumer extends AbstractSampleConsumer {
     @Override
     public void stopConsuming() {
         MapResultData result = new MapResultData();
-        result.setResult("KoPercent", new ValueResultData(Double.valueOf((double) errorCount
-                * 100 / count)));
+        result.setResult("KoPercent", new ValueResultData((double) errorCount
+                * 100 / count));
         result.setResult("OkPercent", new ValueResultData(
-                Double.valueOf((double) (count - errorCount) * 100 / count)));
+                (double) (count - errorCount) * 100 / count));
         setDataToContext(getName(), result);
         super.stopProducing();
     }

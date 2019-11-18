@@ -13,18 +13,20 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
- package org.apache.jmeter.extractor
+package org.apache.jmeter.extractor
+
+import java.util.stream.Stream
 
 import org.apache.jmeter.samplers.SampleResult
 import org.apache.jmeter.threads.JMeterContext
 import org.apache.jmeter.threads.JMeterContextService
 import org.apache.jmeter.threads.JMeterVariables
+
 import spock.lang.Specification
 import spock.lang.Unroll
-
-import java.util.stream.Stream
 
 @Unroll
 class BoundaryExtractorSpec extends Specification {
@@ -115,7 +117,7 @@ class BoundaryExtractorSpec extends Specification {
             matchNumber << [-1, 0, 1, 2, 100]
     }
 
-    def "IllegalArgumentException when one of left (#lb), right (#rb), name (#name) are null"() {
+    def "IllegalArgumentException when name (#name) is null"() {
         given:
             sut.setLeftBoundary(lb)
             sut.setRightBoundary(rb)
@@ -126,8 +128,6 @@ class BoundaryExtractorSpec extends Specification {
             thrown(IllegalArgumentException)
         where:
             lb   | rb   | name
-            null | "r"  | "name"
-            "l"  | null | "name"
             "l"  | "r"  | null
     }
 

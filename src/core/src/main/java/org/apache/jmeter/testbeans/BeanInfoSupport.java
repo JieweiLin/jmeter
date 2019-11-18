@@ -13,7 +13,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
+
 package org.apache.jmeter.testbeans;
 
 import java.awt.Image;
@@ -249,10 +251,10 @@ public abstract class BeanInfoSupport extends SimpleBeanInfo {
             log.debug("Getting property for: {}", name);
             PropertyDescriptor p = property(name);
             p.setValue(GenericTestBeanCustomizer.GROUP, group);
-            p.setValue(GenericTestBeanCustomizer.ORDER, Integer.valueOf(i));
+            p.setValue(GenericTestBeanCustomizer.ORDER, i);
         }
         numCreatedGroups++;
-        getBeanDescriptor().setValue(GenericTestBeanCustomizer.ORDER(group), Integer.valueOf(numCreatedGroups));
+        getBeanDescriptor().setValue(GenericTestBeanCustomizer.ORDER(group), numCreatedGroups);
     }
 
     /** {@inheritDoc} */

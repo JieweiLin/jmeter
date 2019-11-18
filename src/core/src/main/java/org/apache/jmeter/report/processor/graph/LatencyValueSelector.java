@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  */
+
 package org.apache.jmeter.report.processor.graph;
 
 import org.apache.jmeter.report.core.Sample;
@@ -46,11 +47,11 @@ public class LatencyValueSelector extends AbstractGraphValueSelector {
     public Double select(String series, Sample sample) {
         if(isIgnoreTransactionController()) {
             if(!sample.isController()) {
-                return Double.valueOf(sample.getLatency());
+                return (double) sample.getLatency();
             }
         } else {
             if(!sample.isEmptyController()) {
-                return Double.valueOf(sample.getLatency());
+                return (double) sample.getLatency();
             }
         }
         return null;

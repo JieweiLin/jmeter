@@ -16,9 +16,6 @@
  *
  */
 
-/*
- * Created on May 4, 2003
- */
 package org.apache.jmeter.engine.util;
 
 import java.util.Map;
@@ -98,7 +95,7 @@ public class ReplaceFunctionsWithStrings extends AbstractTransformer {
 
     /**
      * Normal regexes will be surrounded by boundary character matches to make life easier for users.
-     * If a user doesn't want that behaviour, he can prevent the modification by giving a regex, that
+     * If a user doesn't want that behaviour, they can prevent the modification by giving a regex, that
      * starts and ends with a parenthesis.
      *
      * @param value given by user

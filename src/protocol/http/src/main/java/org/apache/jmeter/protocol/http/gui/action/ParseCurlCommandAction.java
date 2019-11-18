@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  */
+
 package org.apache.jmeter.protocol.http.gui.action;
 
 import java.awt.BorderLayout;
@@ -50,6 +51,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.tree.TreePath;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jmeter.config.Arguments;
 import org.apache.jmeter.config.KeystoreConfig;
 import org.apache.jmeter.control.Controller;
@@ -137,8 +139,10 @@ public class ParseCurlCommandAction extends AbstractAction implements MenuCreato
      *
      * @param event {@link ActionEvent}
      */
-    private final void showInputDialog(ActionEvent event) {
-        EscapeDialog messageDialog = new EscapeDialog(getParentFrame(event), JMeterUtils.getResString("curl_import"), //$NON-NLS-1$
+    private void showInputDialog(ActionEvent event) {
+        EscapeDialog messageDialog = new EscapeDialog(
+                getParentFrame(event),
+                JMeterUtils.getResString("curl_import"), //$NON-NLS-1$
                 false);
         Container contentPane = messageDialog.getContentPane();
         contentPane.setLayout(new BorderLayout());
@@ -197,18 +201,20 @@ public class ParseCurlCommandAction extends AbstractAction implements MenuCreato
         ThreadGroup threadGroup = new ThreadGroup();
         threadGroup.setProperty(TestElement.GUI_CLASS, ThreadGroupGui.class.getName());
         threadGroup.setProperty(TestElement.NAME, "Thread Group");
-        threadGroup.setNumThreads(10);
-        threadGroup.setRampUp(10);
+        threadGroup.setProperty(AbstractThreadGroup.NUM_THREADS, "${__P(threads,10)}");
+        threadGroup.setProperty(ThreadGroup.RAMP_TIME,"${__P(rampup,30)}");
         threadGroup.setScheduler(true);
-        threadGroup.setDuration(3600);
+        threadGroup.setProperty(ThreadGroup.DURATION,"${__P(duration,3600)}");
         threadGroup.setDelay(5);
         LoopController loopCtrl = new LoopController();
-        loopCtrl.setLoops(-1);
-        loopCtrl.setContinueForever(true);
+        loopCtrl.setProperty(LoopController.LOOPS,"${__P(iterations,-1)}");
+        loopCtrl.setContinueForever(false);
         threadGroup.setSamplerController(loopCtrl);
         TestPlan testPlan = new TestPlan();
         testPlan.setProperty(TestElement.NAME, "Test Plan");
         testPlan.setProperty(TestElement.GUI_CLASS, TestPlanGui.class.getName());
+        testPlan.setComment("You can run me using: jmeter -Jthreads=<Number of threads> -Jrampup=<rampup in seconds> -Jduration=<duration in seconds> "
+                + "-Jiterations=<Number of iterations, -1 means infinite> -e -o <report output folder>");
         HashTree tree = new HashTree();
         HashTree testPlanHT = tree.add(testPlan);
         HashTree threadGroupHT = testPlanHT.add(threadGroup);
@@ -261,7 +267,7 @@ public class ParseCurlCommandAction extends AbstractAction implements MenuCreato
 
     /**
      * @param request    {@link Request}
-     * @param statusText
+     * @param commentText
      * @return {@link HTTPSamplerProxy}
      * @throws MalformedURLException
      */
@@ -276,9 +282,17 @@ public class ParseCurlCommandAction extends AbstractAction implements MenuCreato
             httpSampler.setProperty(TestElement.COMMENTS,
                     "Created from cURL on " + LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
         } // NOSONAR
-        httpSampler.setProtocol(new URL(request.getUrl()).getProtocol());
-        httpSampler.setPath(new URL(request.getUrl()).getPath());
-        httpSampler.setDomain(new URL(request.getUrl()).getHost());
+        URL url = new URL(request.getUrl());
+        httpSampler.setProtocol(url.getProtocol());
+        if (url.getPort() != -1) {
+            httpSampler.setPort(url.getPort());
+        }
+        String path = url.getPath();
+        if (StringUtils.isNotEmpty(url.getQuery())) {
+            path += "?" + url.getQuery();
+        }
+        httpSampler.setPath(path);
+        httpSampler.setDomain(url.getHost());
         httpSampler.setUseKeepAlive(request.isKeepAlive());
         httpSampler.setFollowRedirects(true);
         httpSampler.setMethod(request.getMethod());
@@ -348,7 +362,7 @@ public class ParseCurlCommandAction extends AbstractAction implements MenuCreato
      * Create Cookie Manager
      *
      * @param request {@link Request}
-     * @return{@link CookieManager} element
+     * @return {@link CookieManager} element
      */
     private void createCookieManager(CookieManager cookieManager,Request request) {
         cookieManager.setProperty(TestElement.GUI_CLASS, CookiePanel.class.getName());
@@ -382,12 +396,6 @@ public class ParseCurlCommandAction extends AbstractAction implements MenuCreato
         }
     }
 
-    /**
-     * Create Keystore Configuration
-     *
-     * @param request {@link Request}
-     * @return{@link KeystoreConfig} element
-     */
     private KeystoreConfig createKeystoreConfiguration() {
         KeystoreConfig keystoreConfig = new KeystoreConfig();
         keystoreConfig.setProperty(TestElement.GUI_CLASS, TestBeanGUI.class.getName());
@@ -401,7 +409,6 @@ public class ParseCurlCommandAction extends AbstractAction implements MenuCreato
      * Create Authorization manager
      *
      * @param request {@link Request}
-     * @return {@link AuthManager} element
      */
     private void createAuthManager(Request request, AuthManager authManager) {
         Authorization auth = request.getAuthorization();
@@ -424,7 +431,7 @@ public class ParseCurlCommandAction extends AbstractAction implements MenuCreato
         for (int i = 0; i < authManager.getAuthObjects().size(); i++) {
             if (!authManager.getAuthObjectAt(i).getUser().equals(auth.getUser())
                     || !authManager.getAuthObjectAt(i).getPass().equals(auth.getPass())
-                    || !authManager.getAuthObjectAt(i).getMechanism().equals(auth.getMechanism())) {
+                    || authManager.getAuthObjectAt(i).getMechanism() != auth.getMechanism()) {
                 return true;
             }
         }
@@ -448,12 +455,6 @@ public class ParseCurlCommandAction extends AbstractAction implements MenuCreato
         return true;
     }
 
-    /**
-     * Create DnsCacheManager
-     *
-     * @param request {@link Request}
-     * @return{@link DnsCacheManager} element
-     */
     private void createDnsServer(Request request, DNSCacheManager dnsCacheManager) {
         Set<String> dnsServers = request.getDnsServers();
         dnsCacheManager.setProperty(TestElement.GUI_CLASS, DNSCachePanel.class.getName());
@@ -474,12 +475,7 @@ public class ParseCurlCommandAction extends AbstractAction implements MenuCreato
         }
         return !(newDnsServers.size() == currentDnsServers.size() && newDnsServers.containsAll(currentDnsServers));
     }
-    /**
-     * Create DnsCacheManager
-     *
-     * @param request {@link Request}
-     * @return{@link DnsCacheManager} element
-     */
+
     private void createDnsResolver(Request request, DNSCacheManager dnsCacheManager) {
         dnsCacheManager.setProperty(TestElement.GUI_CLASS, DNSCachePanel.class.getName());
         dnsCacheManager.setProperty(TestElement.NAME, "DNS Cache Manager");
@@ -514,12 +510,7 @@ public class ParseCurlCommandAction extends AbstractAction implements MenuCreato
         }
         return true;
     }
-    /**
-     * Set parameters in http request
-     *
-     * @param request     {@link Request}
-     * @param httpSampler
-     */
+
     private void setFormData(Request request, HTTPSamplerProxy httpSampler) {
         if (request.getPostData() != null) {
             throw new IllegalArgumentException("--form and --data can't appear in the same command");
@@ -561,11 +552,7 @@ public class ParseCurlCommandAction extends AbstractAction implements MenuCreato
             httpSampler.setHTTPFiles(httpFileArgs.toArray(new HTTPFileArg[httpFileArgs.size()]));
         }
     }
-    /**
-     *
-     * @param request     {@link Request}
-     * @param httpSampler
-     */
+
     private void createProxyServer(Request request, HTTPSamplerProxy httpSampler) {
         Map<String, String> proxyServer = request.getProxyServer();
         for (Map.Entry<String, String> proxyPara : proxyServer.entrySet()) {

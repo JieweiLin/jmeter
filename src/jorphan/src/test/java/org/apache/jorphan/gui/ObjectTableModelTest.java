@@ -13,6 +13,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 package org.apache.jorphan.gui;
@@ -27,8 +28,8 @@ import java.util.stream.IntStream;
 import javax.swing.event.TableModelEvent;
 
 import org.apache.jorphan.reflect.Functor;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class ObjectTableModelTest {
 
@@ -59,7 +60,7 @@ public class ObjectTableModelTest {
     ObjectTableModel model;
     TableModelEventBacker events;
 
-    @Before
+    @BeforeEach
     public void init() {
         String[] headers = { "a", "b", "c" };
         Functor[] readFunctors = Arrays.stream(headers).map(name -> "get" + name.toUpperCase()).map(Functor::new).toArray(n -> new Functor[n]);
@@ -114,7 +115,6 @@ public class ObjectTableModelTest {
         // Assert
         assertModelRanges();
 
-
         events.assertEvents(
                 events.assertEvent()
                     .source(model)
@@ -153,8 +153,6 @@ public class ObjectTableModelTest {
                    .firstRow(1)
                    .lastRow(1)
       );
-
-
     }
 
     @Test

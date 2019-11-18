@@ -13,12 +13,14 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 package org.apache.jmeter.control
 
 import org.apache.jmeter.junit.stubs.TestSampler
 import org.apache.jmeter.samplers.Sampler
+
 import spock.lang.Specification
 
 class RunTimeSpec extends Specification {
@@ -64,12 +66,12 @@ class RunTimeSpec extends Specification {
             long elapsed = System.currentTimeMillis() - now
         then:
             sut.getIterCount() == 1
-            loopCount >= expectedLoops
+            loopCount >= expectedLoops - tolerance
             loopCount <= expectedLoops + tolerance
-            elapsed >= runTimeMillis
+            elapsed >= runTimeMillis - (tolerance * samplerWaitTime)
             elapsed <= runTimeMillis + (tolerance * samplerWaitTime)
             samp1.getSamples() == sampler1Loops
-            samp2.getSamples() >= expectedLoops - sampler1Loops
+            samp2.getSamples() >= expectedLoops - sampler1Loops - tolerance
             samp2.getSamples() <= expectedLoops - sampler1Loops + tolerance
     }
 

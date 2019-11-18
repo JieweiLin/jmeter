@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -123,29 +124,36 @@ public class DistributedRunner {
      * @param addresses list of the DNS names or IP addresses of the remote testing engines
      */
     public void start(List<String> addresses) {
-        println("Starting remote engines");
         long now = System.currentTimeMillis();
-        println("Starting the test @ " + new Date(now) + " (" + now + ")");
+        println("Starting distributed test with remote engines: " + addresses + " @ " + new Date(now) + " (" + now + ")");
+        List<String> startedEngines = new ArrayList<>(addresses.size());
+        List<String> failedEngines = new ArrayList<>(addresses.size());
         for (String address : addresses) {
+            JMeterEngine engine = engines.get(address);
             try {
-                if (engines.containsKey(address)) {
-                    engines.get(address).runTest();
+                if (engine != null) {
+                    engine.runTest();
+                    startedEngines.add(address);
                 } else {
                     log.warn(HOST_NOT_FOUND_MESSAGE, address);
+                    failedEngines.add(address);
                 }
             } catch (IllegalStateException | JMeterEngineException e) { // NOSONAR already reported to user
+                failedEngines.add(address);
                 JMeterUtils.reportErrorToUser(e.getMessage(), JMeterUtils.getResString("remote_error_starting")); // $NON-NLS-1$
             }
         }
-        println("Remote engines have been started");
+        println("Remote engines have been started:" + startedEngines);
+        if (!failedEngines.isEmpty()) {
+            errln("The following remote engines have not started:" + failedEngines);
+        }
     }
 
     /**
      * Start all engines that were previously initiated
      */
     public void start() {
-        List<String> addresses = new LinkedList<>();
-        addresses.addAll(engines.keySet());
+        List<String> addresses = new LinkedList<>(engines.keySet());
         start(addresses);
     }
 
@@ -153,7 +161,8 @@ public class DistributedRunner {
         println("Stopping remote engines");
         for (String address : addresses) {
             try {
-                if (engines.containsKey(address)) {
+                JMeterEngine engine = engines.get(address);
+                if (engine != null) {
                     engines.get(address).stopTest(true);
                 } else {
                     log.warn(HOST_NOT_FOUND_MESSAGE, address);
@@ -169,8 +178,7 @@ public class DistributedRunner {
      * Stop all engines that were previously initiated
      */
     public void stop() {
-        List<String> addresses = new LinkedList<>();
-        addresses.addAll(engines.keySet());
+        List<String> addresses = new LinkedList<>(engines.keySet());
         stop(addresses);
     }
 
@@ -239,6 +247,11 @@ public class DistributedRunner {
     private void println(String s) {
         log.info(s);
         stdout.println(s);
+    }
+
+    private void errln(String s) {
+        log.error(s);
+        stderr.println(s);
     }
 
     private void errln(String s, Exception e) {

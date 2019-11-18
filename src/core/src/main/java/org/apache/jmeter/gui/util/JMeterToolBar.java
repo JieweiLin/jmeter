@@ -9,12 +9,11 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed  under the  License is distributed on an "AS IS" BASIS,
- * WITHOUT  WARRANTIES OR CONDITIONS  OF ANY KIND, either  express  or
- * implied.
- *
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 package org.apache.jmeter.gui.util;
@@ -218,7 +217,7 @@ public class JMeterToolBar extends JToolBar implements LocaleChangeListener {
         for (Component component : components) {
             if (component instanceof JButton) {
                 JButton button = (JButton) component;
-                buttonStates.put(button.getActionCommand(), Boolean.valueOf(button.isEnabled()));
+                buttonStates.put(button.getActionCommand(), button.isEnabled());
             }
         }
         return buttonStates;
@@ -249,10 +248,10 @@ public class JMeterToolBar extends JToolBar implements LocaleChangeListener {
      */
     public void setLocalTestStarted(boolean started) {
         Map<String, Boolean> buttonStates = new HashMap<>(3);
-        buttonStates.put(ActionNames.ACTION_START, Boolean.valueOf(!started));
-        buttonStates.put(ActionNames.ACTION_START_NO_TIMERS, Boolean.valueOf(!started));
-        buttonStates.put(ActionNames.ACTION_STOP, Boolean.valueOf(started));
-        buttonStates.put(ActionNames.ACTION_SHUTDOWN, Boolean.valueOf(started));
+        buttonStates.put(ActionNames.ACTION_START, !started);
+        buttonStates.put(ActionNames.ACTION_START_NO_TIMERS, !started);
+        buttonStates.put(ActionNames.ACTION_STOP, started);
+        buttonStates.put(ActionNames.ACTION_SHUTDOWN, started);
         updateButtons(buttonStates);
     }
 
@@ -264,9 +263,9 @@ public class JMeterToolBar extends JToolBar implements LocaleChangeListener {
      */
     public void setRemoteTestStarted(boolean started) {
         Map<String, Boolean> buttonStates = new HashMap<>(3);
-        buttonStates.put(ActionNames.REMOTE_START_ALL, Boolean.valueOf(!started));
-        buttonStates.put(ActionNames.REMOTE_STOP_ALL, Boolean.valueOf(started));
-        buttonStates.put(ActionNames.REMOTE_SHUT_ALL, Boolean.valueOf(started));
+        buttonStates.put(ActionNames.REMOTE_START_ALL, !started);
+        buttonStates.put(ActionNames.REMOTE_STOP_ALL, started);
+        buttonStates.put(ActionNames.REMOTE_SHUT_ALL, started);
         updateButtons(buttonStates);
     }
 
@@ -282,8 +281,8 @@ public class JMeterToolBar extends JToolBar implements LocaleChangeListener {
      */
     public void updateUndoRedoIcons(boolean canUndo, boolean canRedo) {
         Map<String, Boolean> buttonStates = new HashMap<>(2);
-        buttonStates.put(ActionNames.UNDO, Boolean.valueOf(canUndo));
-        buttonStates.put(ActionNames.REDO, Boolean.valueOf(canRedo));
+        buttonStates.put(ActionNames.UNDO, canUndo);
+        buttonStates.put(ActionNames.REDO, canRedo);
         updateButtons(buttonStates);
     }
 
@@ -294,14 +293,18 @@ public class JMeterToolBar extends JToolBar implements LocaleChangeListener {
      *            {@link Map} of button names and their states
      */
     private void updateButtons(Map<String, Boolean> buttonStates) {
-        for (Component component : getComponents()) {
-            if (component instanceof JButton) {
-                JButton button = (JButton) component;
-                Boolean enabled = buttonStates.get(button.getActionCommand());
-                if (enabled != null) {
-                    button.setEnabled(enabled.booleanValue());
+        // Swing APIs (e.g. Button.setEnabled) must be called on a Swing dispatch thread
+        boolean synchronous = false;
+        JMeterUtils.runSafe(synchronous, () -> {
+            for (Component component : getComponents()) {
+                if (component instanceof JButton) {
+                    JButton button = (JButton) component;
+                    Boolean enabled = buttonStates.get(button.getActionCommand());
+                    if (enabled != null) {
+                        button.setEnabled(enabled);
+                    }
                 }
             }
-        }
+        });
     }
 }

@@ -15,9 +15,10 @@
  * limitations under the License.
  *
  */
+
 package org.apache.jmeter.report.processor.graph.impl;
 
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 
 import org.apache.jmeter.report.processor.MeanAggregatorFactory;
@@ -59,11 +60,11 @@ public class ResponseTimeOverTimeGraphConsumer extends
      */
     @Override
     protected Map<String, GroupInfo> createGroupInfos() {
-        HashMap<String, GroupInfo> groupInfos = new HashMap<>(1);
-        groupInfos.put(AbstractGraphConsumer.DEFAULT_GROUP, new GroupInfo(
-                new MeanAggregatorFactory(), new NameSeriesSelector(),
-                // We include Transaction Controller results
-                new ElapsedTimeValueSelector(false), false, false));
-        return groupInfos;
+        return Collections.singletonMap(
+                AbstractGraphConsumer.DEFAULT_GROUP,
+                new GroupInfo(
+                        new MeanAggregatorFactory(), new NameSeriesSelector(),
+                        // We include Transaction Controller results
+                        new ElapsedTimeValueSelector(false), false, false));
     }
 }

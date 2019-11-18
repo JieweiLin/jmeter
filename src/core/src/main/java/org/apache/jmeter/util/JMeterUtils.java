@@ -18,6 +18,7 @@
 
 package org.apache.jmeter.util;
 
+import java.awt.Component;
 import java.awt.Dialog;
 import java.awt.Font;
 import java.awt.Frame;
@@ -49,6 +50,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import javax.swing.ImageIcon;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -915,6 +917,19 @@ public class JMeterUtils implements UnitTestManager {
     }
 
     /**
+     * Creates {@link JLabel} that is associated with a given {@link Component} instance.
+     * @param component component for the label
+     * @param resourceId resource ID to be used for retrieving label text
+     * @return JLabel instance
+     */
+    public static JLabel labelFor(Component component, String resourceId) {
+        JLabel label = new JLabel(getResString(resourceId));
+        label.setName(resourceId);
+        label.setLabelFor(component);
+        return label;
+    }
+
+    /**
      * Takes an array of strings and a tokenizer character, and returns a string
      * of all the strings concatenated with the tokenizer string in between each
      * one.
@@ -1282,11 +1297,7 @@ public class JMeterUtils implements UnitTestManager {
      * @return variable name for index following JMeter convention
      */
     public static String formatJMeterExportedVariableName(String elementName) {
-        StringBuilder builder = new StringBuilder(
-                JMETER_VARS_PREFIX.length()+elementName.length());
-        return builder.append(JMETER_VARS_PREFIX)
-                .append(elementName)
-                .toString();
+        return JMETER_VARS_PREFIX + elementName;
     }
 
     /**

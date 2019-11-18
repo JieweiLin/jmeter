@@ -16,17 +16,16 @@
  *
  */
 
-import com.github.vlsi.gradle.release.ReleaseExtension
 import com.github.vlsi.gradle.crlf.CrLfSpec
 import com.github.vlsi.gradle.crlf.LineEndings
-import com.github.vlsi.gradle.release.dsl.*
 import com.github.vlsi.gradle.git.FindGitAttributes
-import com.github.vlsi.gradle.git.dsl.*
+import com.github.vlsi.gradle.git.dsl.gitignore
 import org.gradle.api.internal.TaskOutputsInternal
 
 plugins {
     id("com.github.vlsi.crlf")
     id("com.github.vlsi.stage-vote-release")
+    signing
 }
 
 var jars = arrayOf(
@@ -34,9 +33,10 @@ var jars = arrayOf(
         ":src:launcher",
         ":src:components",
         ":src:core",
-        //":src:examples",
+        // ":src:examples",
         ":src:functions",
         ":src:jorphan",
+        ":src:protocol:bolt",
         ":src:protocol:ftp",
         ":src:protocol:http",
         ":src:protocol:java",
@@ -49,7 +49,22 @@ var jars = arrayOf(
         ":src:protocol:native",
         ":src:protocol:tcp")
 
-val buildDocs by configurations.creating
+// isCanBeConsumed = false ==> other modules must not use the configuration as a dependency
+val buildDocs by configurations.creating {
+    isCanBeConsumed = false
+}
+val generatorJar by configurations.creating {
+    isCanBeConsumed = false
+}
+val junitSampleJar by configurations.creating {
+    isCanBeConsumed = false
+}
+val binLicense by configurations.creating {
+    isCanBeConsumed = false
+}
+val srcLicense by configurations.creating {
+    isCanBeConsumed = false
+}
 
 // Note: you can inspect final classpath (list of jars in the binary distribution)  via
 // gw dependencies --configuration runtimeClasspath
@@ -63,6 +78,11 @@ dependencies {
             It just looks good, however Darcula is not used explicitly,
              so the dependency is added for distribution only""".trimIndent())
     }
+
+    binLicense(project(":src:licenses", "binLicense"))
+    srcLicense(project(":src:licenses", "srcLicense"))
+    generatorJar(project(":src:generator", "archives"))
+    junitSampleJar(project(":src:protocol:junit-sample", "archives"))
 
     buildDocs(platform(project(":src:bom")))
     buildDocs("org.apache.velocity:velocity")
@@ -118,10 +138,10 @@ val populateLibs by tasks.registering {
                         jorphanProject, bshclientProject -> libs
                         else -> libsExt
                     }).from(dep.file) {
-                        // Technically speaking, current JMeter artifacts do not have version in the name
-                        // however rename is here just in case
+                        // Remove version from the file name
                         rename { dep.name + "." + dep.extension }
                     }
+
                 else -> libs.from(dep.file)
             }
         }
@@ -134,19 +154,27 @@ libs.from(populateLibs)
 libsExt.from(populateLibs)
 binLibs.from(populateLibs)
 
-val copyLibs by tasks.registering(Copy::class) {
-    val junitSampleJar = project(":src:protocol:junit-sample").tasks.named(JavaPlugin.JAR_TASK_NAME)
-    dependsOn(junitSampleJar)
-    val generatorJar = project(":src:generator").tasks.named(JavaPlugin.JAR_TASK_NAME)
+val copyLibs by tasks.registering(Sync::class) {
     // Can't use $rootDir since Gradle somehow reports .gradle/caches/ as "always modified"
     rootSpec.into("$rootDir/lib")
     with(libs)
+    preserve {
+        // Sync does not really know which files it copied during previous times, so
+        // it just removes everything it sees.
+        // We configure it to keep txt files that should be present there (the files come from Git source tree)
+        include("**/*.txt")
+        // Keep jars in lib/ext so developers don't have to re-install the plugins again and again
+        include("ext/*.jar")
+        exclude("ext/ApacheJMeter*.jar")
+    }
     into("ext") {
         with(libsExt)
-        from(generatorJar)
+        from(files(generatorJar)) {
+            rename { "ApacheJMeter_generator.jar" }
+        }
     }
     into("junit") {
-        from(junitSampleJar) {
+        from(files(junitSampleJar)) {
             rename { "test.jar" }
         }
     }
@@ -169,25 +197,16 @@ val createDist by tasks.registering {
 // source/binary artifacts with the appropriate eol/executable file flags
 val gitProps by rootProject.tasks.existing(FindGitAttributes::class)
 
-// Project :src:license-* might not be evaluated yet, so "renderLicenseFor..." task
-// might not exist yet
-// So we add "evaluationDependsOn"
-evaluationDependsOn(":src:licenses")
-
-// This workarounds https://github.com/gradle/gradle/issues/10008
-// Gradle does not support CopySpec#with(Provider<CopySpec>) yet :(
-fun licenses(licenseType: String) =
-    licensesCopySpec(
-        project(":src:licenses")
-            .tasks.named("renderLicenseFor${licenseType.capitalize()}"))
-
-val sourceLicense = licenses("source")
-val binaryLicense = licenses("binary")
-
-fun createAnakiaTask(taskName: String,
-                     baseDir: String, extension: String = ".html", style: String,
-                     velocityProperties: String, projectFile: String, excludes: Array<String>,
-                     includes: Array<String>): TaskProvider<Task> {
+fun createAnakiaTask(
+    taskName: String,
+    baseDir: String,
+    extension: String = ".html",
+    style: String,
+    velocityProperties: String,
+    projectFile: String,
+    excludes: Array<String>,
+    includes: Array<String>
+): TaskProvider<Task> {
     val outputDir = "$buildDir/docs/$taskName"
 
     val prepareProps = tasks.register("prepareProperties$taskName") {
@@ -197,6 +216,9 @@ fun createAnakiaTask(taskName: String,
         val outputProps = "$buildDir/docProps/$taskName/velocity.properties"
         outputs.file(outputProps)
         doLast {
+            // Unfortunately, Velocity does not use Java properties format.
+            // For instance, Properties escape : as \:, however Velocity does not understand that.
+            // Thus it tries to use c\:\path\to\workspace which does not work
             val p = `java.util`.Properties()
             file(velocityProperties).reader().use {
                 p.load(it)
@@ -204,11 +226,18 @@ fun createAnakiaTask(taskName: String,
             p["resource.loader"] = "file"
             p["file.resource.loader.path"] = baseDir
             p["file.resource.loader.class"] = "org.apache.velocity.runtime.resource.loader.FileResourceLoader"
+            val specials = Regex("""([,\\])""")
+            val lines = p.entries
+                .map { (it.key as String) + "=" + ((it.value as String).replace(specials, """\\$1""")) }
+                .sorted()
             file(outputProps).apply {
                 parentFile.run { isDirectory || mkdirs() } || throw IllegalStateException("Unable to create directory $parentFile")
 
                 writer().use {
-                    p.store(it, "Auto-generated from $velocityProperties to pass absolute path to Velocity")
+                    it.appendln("# Auto-generated from $velocityProperties to pass absolute path to Velocity")
+                    for (line in lines) {
+                        it.appendln(line)
+                    }
                 }
             }
         }
@@ -221,7 +250,7 @@ fun createAnakiaTask(taskName: String,
             include(*includes)
             exclude(*excludes)
         })
-        inputs.properties["extension"] = extension
+        inputs.property("extension", extension)
         outputs.dir(outputDir)
         dependsOn(prepareProps)
 
@@ -290,10 +319,12 @@ val previewPrintableDocs by tasks.registering(Copy::class) {
 
 val lastEditYear: String by rootProject.extra
 
-fun xslt(subdir: String,
-         outputDir: String,
-         includes: Array<String> = arrayOf("*.xml"),
-         excludes: Array<String> = arrayOf("extending.xml")) {
+fun xslt(
+    subdir: String,
+    outputDir: String,
+    includes: Array<String> = arrayOf("*.xml"),
+    excludes: Array<String> = arrayOf("extending.xml")
+) {
 
     val relativePath = if (subdir.isEmpty()) "." else ".."
     ant.withGroovyBuilder {
@@ -313,14 +344,14 @@ fun xslt(subdir: String,
 val processSiteXslt by tasks.registering {
     val outputDir = "$buildDir/siteXslt"
     inputs.files(xdocs)
-    inputs.properties["year"] = lastEditYear
+    inputs.property("year", lastEditYear)
     outputs.dir(outputDir)
 
     doLast {
-        for(f in (outputs as TaskOutputsInternal).previousOutputFiles) {
+        for (f in (outputs as TaskOutputsInternal).previousOutputFiles) {
             f.delete()
         }
-        for(i in arrayOf("", "usermanual", "localising")) {
+        for (i in arrayOf("", "usermanual", "localising")) {
             xslt(i, outputDir)
         }
     }
@@ -337,10 +368,12 @@ fun CopySpec.siteLayout() {
     manuals()
 }
 
-val previewSite by tasks.registering(Copy::class) {
+// See https://github.com/gradle/gradle/issues/10960
+val previewSiteDir = buildDir.resolve("site")
+val previewSite by tasks.registering(Sync::class) {
     group = JavaBasePlugin.DOCUMENTATION_GROUP
     description = "Creates preview of a site to build/docs/site"
-    into("$buildDir/site")
+    into(previewSiteDir)
     CrLfSpec().run {
         gitattributes(gitProps)
         siteLayout()
@@ -365,7 +398,8 @@ fun CrLfSpec.binaryLayout() = copySpec {
     into(baseFolder) {
         // Note: license content is taken from "/build/..", so gitignore should not be used
         // Note: this is a "license + third-party licenses", not just Apache-2.0
-        dependencyLicenses(binaryLicense)
+        // Note: files(...) adds both "files" and "dependency"
+        from(files(binLicense))
         from(rootDir) {
             gitignore(gitProps)
             exclude("bin/testfiles")
@@ -398,7 +432,8 @@ fun CrLfSpec.sourceLayout() = copySpec {
     into(baseFolder) {
         // Note: license content is taken from "/build/..", so gitignore should not be used
         // Note: this is a "license + third-party licenses", not just Apache-2.0
-        dependencyLicenses(sourceLicense)
+        // Note: files(...) adds both "files" and "dependency"
+        from(files(srcLicense))
         // Include all the source files
         from(rootDir) {
             gitignore(gitProps)
@@ -445,24 +480,23 @@ for (type in listOf("binary", "source")) {
             // Gradle defaults to the following pattern, and JMeter was using apache-jmeter-5.1_src.zip
             // [baseName]-[appendix]-[version]-[classifier].[extension]
             archiveBaseName.set("apache-jmeter-${rootProject.version}${if (type == "source") "_src" else ""}")
+            // Discard project version since we want it to be added before "_src"
+            archiveVersion.set("")
             CrLfSpec(eol).run {
                 wa1191SetInputs(gitProps)
                 with(if (type == "source") sourceLayout() else binaryLayout())
             }
         }
-        rootProject.configure<ReleaseExtension> {
-            archive(archiveTask)
+        releaseArtifacts {
+            artifact(archiveTask)
         }
     }
 }
 
-rootProject.configure<ReleaseExtension> {
-    previewSiteContents {
-        CrLfSpec().run {
-            into("site") {
-                gitattributes(gitProps)
-                siteLayout()
-            }
+releaseArtifacts {
+    previewSite(previewSite) {
+        into("site") {
+            from(previewSiteDir)
         }
     }
 }
@@ -479,6 +513,14 @@ val runGui by tasks.registering() {
             classpath("$rootDir/bin/ApacheJMeter.jar")
             jvmArgs("-Xss256k")
             jvmArgs("-XX:MaxMetaspaceSize=256m")
+
+            val osName = System.getProperty("os.name")
+            if (osName.contains(Regex("mac os x|darwin|osx", RegexOption.IGNORE_CASE))) {
+                jvmArgs("-Xdock:name=JMeter")
+                jvmArgs("-Xdock:icon=$rootDir/xdocs/images/jmeter_square.png")
+                jvmArgs("-Dapple.laf.useScreenMenuBar=true")
+                jvmArgs("-Dapple.eawt.quitStrategy=CLOSE_ALL_WINDOWS")
+            }
         }
     }
 }

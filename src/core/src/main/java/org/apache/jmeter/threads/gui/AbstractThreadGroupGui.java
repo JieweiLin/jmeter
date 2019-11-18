@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import javax.swing.BorderFactory;
-import javax.swing.Box;
 import javax.swing.ButtonGroup;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
@@ -36,10 +35,13 @@ import org.apache.jmeter.gui.AbstractJMeterGuiComponent;
 import org.apache.jmeter.gui.action.ActionNames;
 import org.apache.jmeter.gui.action.ActionRouter;
 import org.apache.jmeter.gui.util.MenuFactory;
+import org.apache.jmeter.gui.util.VerticalPanel;
 import org.apache.jmeter.testelement.TestElement;
 import org.apache.jmeter.testelement.property.StringProperty;
 import org.apache.jmeter.threads.AbstractThreadGroup;
 import org.apache.jmeter.util.JMeterUtils;
+
+import net.miginfocom.swing.MigLayout;
 
 public abstract class AbstractThreadGroupGui extends AbstractJMeterGuiComponent {
     private static final long serialVersionUID = 240L;
@@ -125,7 +127,7 @@ public abstract class AbstractThreadGroupGui extends AbstractJMeterGuiComponent 
         setLayout(new BorderLayout(0, 5));
         setBorder(makeBorder());
 
-        Box box = Box.createVerticalBox();
+        VerticalPanel box = new VerticalPanel();
         box.add(makeTitlePanel());
         box.add(createOnErrorPanel());
         add(box, BorderLayout.NORTH);
@@ -136,7 +138,7 @@ public abstract class AbstractThreadGroupGui extends AbstractJMeterGuiComponent 
     }
 
     private JPanel createOnErrorPanel() {
-        JPanel panel = new JPanel();
+        JPanel panel = new JPanel(new MigLayout());
         panel.setBorder(BorderFactory.createTitledBorder(
                 JMeterUtils.getResString("sampler_on_error_action"))); // $NON-NLS-1$
 

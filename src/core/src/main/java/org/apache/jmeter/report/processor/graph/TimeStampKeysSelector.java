@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  */
+
 package org.apache.jmeter.report.processor.graph;
 
 import org.apache.jmeter.report.core.Sample;
@@ -80,7 +81,7 @@ public class TimeStampKeysSelector implements GraphKeysSelector {
     @Override
     public Double select(Sample sample) {
         long time = selectBeginTime ? sample.getStartTime() : sample.getEndTime();
-        return Double.valueOf((double) time - time % granularity);
+        return (double) time - time % granularity;
     }
 
 }

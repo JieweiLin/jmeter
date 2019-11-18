@@ -13,7 +13,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
+
 package org.apache.jmeter.testbeans.gui;
 
 import java.awt.Component;
@@ -708,7 +710,7 @@ public class GenericTestBeanCustomizer extends JPanel implements SharedCustomize
         private Integer groupOrder(String group) {
             Integer order = (Integer) beanInfo.getBeanDescriptor().getValue(ORDER(group));
             if (order == null) {
-                order = Integer.valueOf(0);
+                order = 0;
             }
             return order;
         }
@@ -722,7 +724,7 @@ public class GenericTestBeanCustomizer extends JPanel implements SharedCustomize
         private Integer propertyOrder(PropertyDescriptor d) {
             Integer order = (Integer) d.getValue(ORDER);
             if (order == null) {
-                order = Integer.valueOf(0);
+                order = 0;
             }
             return order;
         }

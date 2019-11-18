@@ -13,6 +13,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
 package org.apache.jmeter.protocol.jms.sampler.render;
@@ -91,6 +92,7 @@ class ObjectMessageRenderer implements MessageRenderer<Serializable> {
     /** Try to determine encoding based on XML prolog, if none <code>null</code> is returned. **/
     protected String findEncoding(String filename) {
         XMLInputFactory factory = XMLInputFactory.newInstance();
+        factory.setProperty(XMLInputFactory.SUPPORT_DTD, Boolean.FALSE);
         try (FileInputStream input = new FileInputStream(filename)) {
             XMLStreamReader reader = factory.createXMLStreamReader(input);
             return reader.getEncoding();

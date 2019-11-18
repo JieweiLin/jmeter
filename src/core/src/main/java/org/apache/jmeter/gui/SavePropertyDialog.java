@@ -6,19 +6,16 @@
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  */
 
-/*
- * Created on Sep 15, 2004
- */
 package org.apache.jmeter.gui;
 
 import java.awt.BorderLayout;
@@ -137,12 +134,12 @@ public class SavePropertyDialog extends JDialog implements ActionListener {
     public void actionPerformed(ActionEvent e) {
         String action = e.getActionCommand();
         Functor f = functors.get(action);
-        f.invoke(saveConfig, new Object[] {Boolean.valueOf(((JCheckBox) e.getSource()).isSelected()) });
+        f.invoke(saveConfig, new Object[] {((JCheckBox) e.getSource()).isSelected()});
     }
 
     private boolean getSaveState(String methodName) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         Method method = SampleSaveConfiguration.class.getMethod(methodName);
-        return ((Boolean) method.invoke(saveConfig)).booleanValue();
+        return (Boolean) method.invoke(saveConfig);
     }
 
     /**

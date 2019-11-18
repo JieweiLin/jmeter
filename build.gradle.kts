@@ -32,13 +32,14 @@ plugins {
     java
     jacoco
     checkstyle
-    id("org.jetbrains.gradle.plugin.idea-ext") version "0.5" apply false
-    id("org.nosphere.apache.rat") version "0.5.0"
-    id("com.github.spotbugs") version "1.6.10"
-    id("org.sonarqube") version "2.7.1"
-    id("com.github.vlsi.crlf") version "1.17.0"
-    id("com.github.vlsi.ide") version "1.17.0"
-    id("com.github.vlsi.stage-vote-release") version "1.17.0"
+    id("org.jetbrains.gradle.plugin.idea-ext") apply false
+    id("org.nosphere.apache.rat")
+    id("com.diffplug.gradle.spotless")
+    id("com.github.spotbugs")
+    id("org.sonarqube")
+    id("com.github.vlsi.crlf")
+    id("com.github.vlsi.ide")
+    id("com.github.vlsi.stage-vote-release")
     signing
     publishing
 }
@@ -56,7 +57,6 @@ fun Project.boolProp(name: String) =
         // We don't want to use "task" as a boolean property
         ?.let { it as? String }
         ?.equals("false", ignoreCase = true)?.not()
-
 
 // Release candidate index
 val String.v: String get() = rootProject.extra["$this.version"] as String
@@ -100,23 +100,40 @@ val gitProps by tasks.registering(FindGitAttributes::class) {
 val rat by tasks.getting(org.nosphere.apache.rat.RatTask::class) {
     gitignore(gitProps)
     // Note: patterns are in non-standard syntax for RAT, so we use exclude(..) instead of excludeFile
-    exclude(rootDir.resolve("rat-excludes.txt").readLines())
+    exclude(rootDir.resolve(".ratignore").readLines())
+}
+
+tasks.validateBeforeBuildingReleaseArtifacts {
+    dependsOn(rat)
+}
+
+releaseArtifacts {
+    fromProject(":src:dist")
+    previewSite {
+        into("rat")
+        from(rat) {
+            filteringCharset = "UTF-8"
+            // XML is not really interesting for now
+            exclude("rat-report.xml")
+            // RAT reports have absolute paths, and we don't want to expose them
+            filter { str: String -> str.replace(rootDir.absolutePath, "") }
+        }
+    }
 }
 
 releaseParams {
     tlp.set("JMeter")
-    releaseTag.set("v${project.version.toString().replace('.', '_')}")
-    rcTag.set(releaseTag.map { "${it}_RC" + rc.get() })
-    previewSiteContents {
-        into("rat")
-        from(rat)
-    }
+    releaseTag.set("rel/v${project.version}")
+    rcTag.set(rc.map { "v${project.version}-rc$it" })
     svnDist {
         // All the release versions are put under release/jmeter/{source,binary}
         releaseFolder.set("release/jmeter")
         releaseSubfolder.apply {
-            put(Regex("_src\\."), "sources")
+            put(Regex("_src\\."), "source")
             put(Regex("."), "binaries")
+        }
+        staleRemovalFilters {
+            excludes.add(Regex("release/.*/HEADER\\.html"))
         }
     }
     nexus {
@@ -125,7 +142,15 @@ releaseParams {
             stagingProfileId.set("4d29c092016673")
         }
     }
+    validateBeforeBuildingReleaseArtifacts += Runnable {
+        if (useGpgCmd && findProperty("signing.gnupg.keyName") == null) {
+            throw GradleException("Please specify signing key id via signing.gnupg.keyName " +
+                    "(see https://github.com/gradle/gradle/issues/8657)")
+        }
+    }
 }
+
+val isReleaseVersion = rootProject.releaseParams.release.get()
 
 val jacocoReport by tasks.registering(JacocoReport::class) {
     group = "Coverage reports"
@@ -149,9 +174,24 @@ val skipCheckstyle by extra {
     boolProp("skipCheckstyle") ?: false
 }
 
+val skipSpotless by extra {
+    boolProp("skipSpotless") ?: false
+}
+
 // Allow to skip building source/binary distributions
 val skipDist by extra {
     boolProp("skipDist") ?: false
+}
+
+// By default use Java implementation to sign artifacts
+// When useGpgCmd=true, then gpg command line tool is used for signing
+val useGpgCmd by extra {
+    boolProp("useGpgCmd") ?: false
+}
+
+// Signing is required for RELEASE version
+val skipSigning by extra {
+    boolProp("skipSigning") ?: boolProp("skipSign") ?: false
 }
 
 allprojects {
@@ -241,11 +281,36 @@ if (enableSpotBugs) {
     }
 }
 
+val licenseHeaderFile = file("config/license.header.java")
 allprojects {
     group = "org.apache.jmeter"
+    version = rootProject.version
     // JMeter ClassFinder parses "class.path" and tries to find jar names there,
     // so we should produce jars without versions names for now
     // version = rootProject.version
+    if (!skipSpotless) {
+        apply(plugin = "com.diffplug.gradle.spotless")
+        spotless {
+            kotlinGradle {
+                ktlint()
+                trimTrailingWhitespace()
+                endWithNewline()
+            }
+            if (project == rootProject) {
+                // Spotless does not exclude subprojects when using target(...)
+                // So **/*.md is enough to scan all the md files in JMeter codebase
+                // See https://github.com/diffplug/spotless/issues/468
+                format("markdown") {
+                    target("**/*.md")
+                    // Flot is known to have trailing whitespace, so the files
+                    // are kept in their original format (e.g. to simplify diff on library upgrade)
+                    targetExclude("bin/report-template/**/flot*/*.md")
+                    trimTrailingWhitespace()
+                    endWithNewline()
+                }
+            }
+        }
+    }
     plugins.withType<JavaPlugin> {
         // We don't intend to resolve that configuration
         // It is in line with further Gradle versions: https://github.com/gradle/gradle/issues/8585
@@ -262,12 +327,69 @@ allprojects {
             checkstyle {
                 toolVersion = "checkstyle".v
             }
+            val sourceSets: SourceSetContainer by project
+            if (sourceSets.isNotEmpty()) {
+                tasks.register("checkstyleAll") {
+                    dependsOn(sourceSets.names.map { "checkstyle" + it.capitalize() })
+                }
+                tasks.register("checkstyle") {
+                    group = LifecycleBasePlugin.VERIFICATION_GROUP
+                    description = "Executes Checkstyle verifications"
+                    dependsOn("checkstyleAll")
+                    dependsOn("spotlessCheck")
+                }
+                // Spotless produces more meaningful error messages, so we ensure it is executed before Checkstyle
+                if (!skipSpotless) {
+                    for (s in sourceSets.names) {
+                        tasks.named("checkstyle" + s.capitalize()) {
+                            mustRunAfter("spotlessApply")
+                            mustRunAfter("spotlessCheck")
+                        }
+                    }
+                }
+            }
         }
         apply<SpotBugsPlugin>()
 
         spotbugs {
             toolVersion = "spotbugs".v
             isIgnoreFailures = ignoreSpotBugsFailures
+        }
+
+        if (!skipSpotless) {
+            spotless {
+                java {
+                    licenseHeaderFile(licenseHeaderFile)
+                    importOrder("static ", "java.", "javax", "org", "net", "com", "")
+                    removeUnusedImports()
+                    trimTrailingWhitespace()
+                    indentWithSpaces(4)
+                    endWithNewline()
+                }
+            }
+        }
+        tasks.register("style") {
+            group = LifecycleBasePlugin.VERIFICATION_GROUP
+            description = "Formats code (license header, import order, whitespace at end of line, ...) and executes Checkstyle verifications"
+            if (!skipSpotless) {
+                dependsOn("spotlessApply")
+            }
+            if (!skipCheckstyle) {
+                dependsOn("checkstyleAll")
+            }
+        }
+    }
+    plugins.withId("groovy") {
+        if (!skipSpotless) {
+            spotless {
+                groovy {
+                    licenseHeaderFile(licenseHeaderFile)
+                    importOrder("static ", "java.", "javax", "org", "net", "com", "")
+                    trimTrailingWhitespace()
+                    indentWithSpaces(4)
+                    endWithNewline()
+                }
+            }
         }
     }
 
@@ -332,21 +454,27 @@ allprojects {
     }
 
     // Not all the modules use publishing plugin
-    plugins.withType<PublishingPlugin> {
-        apply<SigningPlugin>()
-        // Sign all the published artifacts
-        signing {
-            sign(publishing.publications)
+    if (isReleaseVersion && !skipSigning) {
+        plugins.withType<PublishingPlugin> {
+            apply<SigningPlugin>()
+            // Sign all the published artifacts
+            signing {
+                sign(publishing.publications)
+            }
         }
     }
 
     plugins.withType<SigningPlugin> {
+        if (useGpgCmd) {
+            signing {
+                useGpgCmd()
+            }
+        }
         afterEvaluate {
-            configure<SigningExtension> {
-                val release = rootProject.releaseParams.release.get()
+            signing {
                 // Note it would still try to sign the artifacts,
                 // however it would fail only when signing a RELEASE version fails
-                isRequired = release
+                isRequired = isReleaseVersion && !skipSigning
             }
         }
     }
@@ -391,8 +519,6 @@ allprojects {
                     include("**/*.dtd")
                     include("**/*.svg")
                     include("**/*.txt")
-                    // Test resources have files in CP1252, and we don't want to parse them as UTF-8
-                    exclude("**/*cp1252*")
                     filteringCharset = "UTF-8"
                     filter(LineEndings.LF)
                 }
@@ -424,12 +550,32 @@ allprojects {
                 }
             }
             withType<Test>().configureEach {
+                useJUnitPlatform()
                 testLogging {
                     exceptionFormat = TestExceptionFormat.FULL
                     showStandardStreams = true
                 }
                 // Pass the property to tests
-                systemProperty("java.awt.headless", System.getProperty("java.awt.headless"))
+                fun passProperty(name: String, default: String? = null) {
+                    val value = System.getProperty(name) ?: default
+                    value?.let { systemProperty(name, it) }
+                }
+                passProperty("java.awt.headless")
+                passProperty("skip.test_TestDNSCacheManager.testWithCustomResolverAnd1Server")
+                passProperty("junit.jupiter.execution.parallel.enabled", "true")
+                passProperty("junit.jupiter.execution.timeout.default", "2 m")
+                // https://github.com/junit-team/junit5/issues/2041
+                // Gradle does not print parameterized test names yet :(
+                afterTest(KotlinClosure2<TestDescriptor, TestResult, Any>({ descriptor, result ->
+                    if (result.resultType != TestResult.ResultType.SUCCESS) {
+                        val test = descriptor as org.gradle.api.internal.tasks.testing.TestDescriptorInternal
+                        val classDisplayName = test.className?.let {
+                            if (it.endsWith(test.classDisplayName)) it else "${test.className} [${test.classDisplayName}]"
+                        } ?: test.classDisplayName
+                        val testDisplayName = if (test.name == test.displayName) test.displayName else "${test.name} [${test.displayName}]"
+                        println("\n$classDisplayName > $testDisplayName: ${result.resultType}")
+                    }
+                }))
             }
             withType<SpotBugsTask>().configureEach {
                 group = LifecycleBasePlugin.VERIFICATION_GROUP
@@ -448,6 +594,7 @@ allprojects {
                 (options as StandardJavadocDocletOptions).apply {
                     noTimestamp.value = true
                     showFromProtected()
+                    locale = "en"
                     docEncoding = "UTF-8"
                     charSet = "UTF-8"
                     encoding = "UTF-8"

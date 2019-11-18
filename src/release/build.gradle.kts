@@ -23,11 +23,13 @@ rootProject.configure<ReleaseExtension> {
     voteText.set { it.voteTextGen() }
 }
 
+val String.prop: String? get() = System.getProperty(this)
+
 fun ReleaseParams.voteTextGen(): String = """
-The first release candidate for JMeter $version ($shortGitSha) has been
+The [RC NUMBER] release candidate for JMeter $version ($shortGitSha) has been
 prepared, and your votes are solicited.
 
-This release is mainly a bugfix
+This release... TO BE COMPLETED
 
 Please, test this release candidate (with load tests and/or functional
 tests) using Java 8+ on Linux/Windows/macOS, especially on the changes.
@@ -42,7 +44,7 @@ behavior and measure performance. The current version targets Java 8+
 
 Download - Archives/hashes/sigs:
 $svnStagingUri
-(dist revision TBD:SVN revision of svnmucc stage result)
+(dist revision $svnStagingRevision)
 
 RAT report:
 $previewSiteUri/rat/rat-report.txt
@@ -65,9 +67,13 @@ Keys are here:
 https://www.apache.org/dist/$tlpUrl/KEYS
 
 N.B.
-To create the jars and test $tlp: "./gradlew build".
+To create the distribution and test $tlp: "./gradlew build -Prelease -PskipSigning".
 
 $tlp $version requires Java 8 or later to run.
+
+The artifacts were built with
+  ${"java.runtime.name".prop} ${"java.vendor".prop} (build ${"java.runtime.version".prop})
+  ${"java.vm.name".prop} ${"java.vm.vendor".prop} (build ${"java.vm.version".prop}, ${"java.vm.info".prop})
 
 Some known issues and incompatible changes are listed on changes page.
 $previewSiteUri/site/changes.html#Known%20problems%20and%20workarounds

@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  */
+
 package org.apache.jmeter.report.processor;
 
 import java.io.File;
@@ -157,11 +158,11 @@ public abstract class AbstractSampleConsumer extends AbstractSampleProcessor
 
     @Override
     public void setConsumedMetadata(SampleMetadata sampleMetadata, int channel) {
-        consumedMetadata.put(Integer.valueOf(channel), sampleMetadata);
+        consumedMetadata.put(channel, sampleMetadata);
     }
 
     public SampleMetadata getConsumedMetadata(int channel) {
-        return consumedMetadata.get(Integer.valueOf(channel));
+        return consumedMetadata.get(channel);
     }
 
     public int getConsumedChannelCount() {

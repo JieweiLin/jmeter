@@ -13,7 +13,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
+
 package org.apache.jmeter.testbeans.gui;
 
 import java.awt.Component;
@@ -51,7 +53,7 @@ class EnumEditor extends PropertyEditorSupport implements ClearGui {
         }
         Object def = descriptor.getValue(GenericTestBeanCustomizer.DEFAULT);
         if (def instanceof Integer) {
-            defaultIndex = ((Integer) def).intValue();
+            defaultIndex = (Integer) def;
         } else {
             defaultIndex = 0;
         }
@@ -70,7 +72,7 @@ class EnumEditor extends PropertyEditorSupport implements ClearGui {
 
     @Override
     public Object getValue() {
-        return Integer.valueOf(combo.getSelectedIndex());
+        return combo.getSelectedIndex();
     }
 
     @Override
@@ -84,7 +86,7 @@ class EnumEditor extends PropertyEditorSupport implements ClearGui {
         if (value instanceof Enum<?>){
             combo.setSelectedIndex(((Enum<?>) value).ordinal());
         } else if (value instanceof Integer) {
-            combo.setSelectedIndex(((Integer) value).intValue());
+            combo.setSelectedIndex((Integer) value);
         } else {
             combo.setSelectedItem(value);
         }

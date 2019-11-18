@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.jmeter.util.JMeterUtils;
 import org.apache.jorphan.exec.SystemCommand;
@@ -40,7 +41,7 @@ public class HtmlReportGenerator {
     public static final String CANNOT_CREATE_DIRECTORY = "generate_report_ui.cannot_create_directory";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HtmlReportGenerator.class);
-    private static final long COMMAND_TIMEOUT = JMeterUtils.getPropDefault("generate_report_ui.generation_timeout", 120000L);
+    private static final long COMMAND_TIMEOUT = JMeterUtils.getPropDefault("generate_report_ui.generation_timeout", 120_000L);
 
     private String csvFilePath;
     private String userPropertiesFilePath;
@@ -56,8 +57,10 @@ public class HtmlReportGenerator {
         }
     }
 
-    /*
-     * Prepare and Run the HTML report generation command
+    /**
+     * Prepare and Run the HTML report generation command.
+     *
+     * @return a list of error messages
      */
     public List<String> run() {
         List<String> errorMessageList = new ArrayList<>();
@@ -70,8 +73,14 @@ public class HtmlReportGenerator {
         int resultCode = -1;
         List<String> generationCommand = createGenerationCommand();
         try {
-            SystemCommand sc = new SystemCommand(new File(JMeterUtils.getJMeterBinDir()), COMMAND_TIMEOUT, 100, null, null,
-                    commandExecutionOutput, null);
+            SystemCommand sc = new SystemCommand(
+                    new File(JMeterUtils.getJMeterBinDir()),
+                    COMMAND_TIMEOUT,
+                    100,
+                    null,
+                    null,
+                    commandExecutionOutput,
+                    null);
             LOGGER.debug("Running report generation");
             resultCode = sc.run(generationCommand);
             if (resultCode != 0) {
@@ -79,10 +88,11 @@ public class HtmlReportGenerator {
                 LOGGER.info("The HTML report generation failed and returned: {}", commandExecutionOutput);
                 return errorMessageList;
             }
-        } catch (InterruptedException | IOException e) {
+        } catch (InterruptedException | TimeoutException | IOException e) {
             errorMessageList.add(commandExecutionOutput.toString());
-            if (LOGGER.isErrorEnabled()) {
-                LOGGER.error("Error during HTML report generation: {}", e.getMessage(), e);
+            LOGGER.error("Error during HTML report generation:", e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
             }
         }
         LOGGER.debug("SystemCommand ran: {}  returned: {}", generationCommand, resultCode);
@@ -143,8 +153,7 @@ public class HtmlReportGenerator {
     /**
      * Check if a file is correct for report generation
      *
-     * @param fileToCheck
-     *            the directory to check
+     * @param fileToCheck the directory to check
      * @return the error message or null if the file is ok
      */
     private String checkFile(File fileToCheck) {
@@ -158,8 +167,7 @@ public class HtmlReportGenerator {
     /**
      * Check if a directory is fine for report generation
      *
-     * @param directoryToCheck
-     *            the directory to check
+     * @param directoryToCheck the directory to check
      * @return the error message or an empty string if the directory is fine
      */
     private String checkDirectory(File directoryToCheck) {
@@ -172,8 +180,8 @@ public class HtmlReportGenerator {
             }
         } else {
             File parentDirectory = directoryToCheck.getParentFile();
-            if(parentDirectory != null && parentDirectory.exists() && parentDirectory.canWrite()) {
-                if(directoryToCheck.mkdir()) {
+            if (parentDirectory != null && parentDirectory.exists() && parentDirectory.canWrite()) {
+                if (directoryToCheck.mkdir()) {
                     return null;
                 } else {
                     return MessageFormat.format(JMeterUtils.getResString(CANNOT_CREATE_DIRECTORY), directoryToCheck);

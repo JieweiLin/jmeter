@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
 /**
  * This is the GUI for Cookie Manager {@link CookieManager}
  *
- * Allows the user to specify if she needs cookie services, and give parameters
+ * Allows the user to specify if they need cookie services, and give parameters
  * for this service.
  */
 @GUIMenuSortOrder(3)
@@ -189,7 +189,7 @@ public class CookiePanel extends AbstractConfigGui implements ActionListener {
 
     private void addCookieToTable(Cookie cookie) {
         tableModel.addRow(new Object[] { cookie.getName(), cookie.getValue(), cookie.getDomain(), cookie.getPath(),
-                Boolean.valueOf(cookie.getSecure()) });
+                cookie.getSecure()});
     }
 
     /**
@@ -243,7 +243,7 @@ public class CookiePanel extends AbstractConfigGui implements ActionListener {
                 (String) rowData[1],
                 (String) rowData[2],
                 (String) rowData[3],
-                ((Boolean) rowData[4]).booleanValue(),
+                (Boolean) rowData[4],
                 0); // Non-expiring
         return cookie;
     }
@@ -325,7 +325,7 @@ public class CookiePanel extends AbstractConfigGui implements ActionListener {
         panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), JMeterUtils
                 .getResString("cookies_stored"))); //$NON-NLS-1$
 
-        panel.add(new JScrollPane(cookieTable), BorderLayout.CENTER);
+        panel.add(GuiUtils.emptyBorder(new JScrollPane(cookieTable)), BorderLayout.CENTER);
         panel.add(buttonPanel, BorderLayout.SOUTH);
         return panel;
     }

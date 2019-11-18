@@ -15,10 +15,10 @@
  * limitations under the License.
  *
  */
+
 package org.apache.jmeter.report.processor.graph.impl;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.jmeter.report.processor.MeanAggregatorFactory;
@@ -62,14 +62,14 @@ public class ConnectTimeOverTimeGraphConsumer extends AbstractOverTimeGraphConsu
      */
     @Override
     protected Map<String, GroupInfo> createGroupInfos() {
-        if(!CONNECT_TIME_SAVED) {
+        if (!CONNECT_TIME_SAVED) {
             return Collections.emptyMap();
         }
-        HashMap<String, GroupInfo> groupInfos = new HashMap<>();
-        groupInfos.put(AbstractGraphConsumer.DEFAULT_GROUP, new GroupInfo(
-                new MeanAggregatorFactory(), new NameSeriesSelector(),
-                // We ignore Transaction Controller results
-                new ConnectTimeValueSelector(false), false, false));
-        return groupInfos;
+        return Collections.singletonMap(
+                AbstractGraphConsumer.DEFAULT_GROUP,
+                new GroupInfo(
+                        new MeanAggregatorFactory(), new NameSeriesSelector(),
+                        // We ignore Transaction Controller results
+                        new ConnectTimeValueSelector(false), false, false));
     }
 }

@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  */
+
 package org.apache.jmeter.report.processor;
 
 import java.util.HashMap;
@@ -28,7 +29,7 @@ import java.util.Map;
  */
 public class Top5ErrorsSummaryData {
 
-    private static final Long ONE = Long.valueOf(1L);
+    private static final Long ONE = 1L;
     private Map<String, Long> countPerError;
     private long total;
     private long errors;
@@ -48,7 +49,7 @@ public class Top5ErrorsSummaryData {
         if (value == null) {
             countPerError.put(errorMessage, ONE);
         } else {
-            countPerError.put(errorMessage, Long.valueOf(value.longValue() + 1));
+            countPerError.put(errorMessage, value + 1);
         }
     }
 

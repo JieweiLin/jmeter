@@ -21,7 +21,6 @@ package org.apache.jmeter.protocol.http.sampler;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
@@ -199,27 +198,13 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
 
     private static final Logger log = LoggerFactory.getLogger(HTTPHC4Impl.class);
 
-    private static final InputStreamFactory GZIP = new InputStreamFactory() {
-        @Override
-        public InputStream create(final InputStream instream) throws IOException {
-            return new LaxGZIPInputStream(instream, GZIP_RELAX_MODE);
-        }
-    };
+    private static final InputStreamFactory GZIP =
+            instream -> new LaxGZIPInputStream(instream, GZIP_RELAX_MODE);
 
-    private static final InputStreamFactory DEFLATE = new InputStreamFactory() {
-        @Override
-        public InputStream create(final InputStream instream) throws IOException {
-            return new LaxDeflateInputStream(instream, DEFLATE_RELAX_MODE);
-        }
+    private static final InputStreamFactory DEFLATE =
+            instream -> new LaxDeflateInputStream(instream, DEFLATE_RELAX_MODE);
 
-    };
-
-    private static final InputStreamFactory BROTLI = new InputStreamFactory() {
-        @Override
-        public InputStream create(final InputStream instream) throws IOException {
-            return new BrotliInputStream(instream);
-        }
-    };
+    private static final InputStreamFactory BROTLI = BrotliInputStream::new;
 
     private static final class PreemptiveAuthRequestInterceptor implements HttpRequestInterceptor {
         @Override
@@ -373,7 +358,7 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
         public long getKeepAliveDuration(HttpResponse response, HttpContext context) {
             long duration = super.getKeepAliveDuration(response, context);
             if (duration <= 0 && IDLE_TIMEOUT > 0) {// none found by the superclass
-                log.debug("Setting keepalive to {}", Integer.valueOf(IDLE_TIMEOUT));
+                log.debug("Setting keepalive to {}", IDLE_TIMEOUT);
                 return IDLE_TIMEOUT;
             }
             return duration; // return the super-class value
@@ -382,10 +367,7 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
     };
 
     private static final String DIGEST_PARAMETERS = DigestParameters.VARIABLE_NAME;
-
-
     private static final HttpRequestInterceptor PREEMPTIVE_AUTH_INTERCEPTOR = new PreemptiveAuthRequestInterceptor();
-
 
     // see  https://stackoverflow.com/questions/26166469/measure-bandwidth-usage-with-apache-httpcomponents-httpclient
     private static final HttpRequestExecutor REQUEST_EXECUTOR = new HttpRequestExecutor() {
@@ -398,17 +380,14 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
             HttpConnectionMetrics metrics = conn.getMetrics();
             long sentBytesCount = metrics.getSentBytesCount();
             // We save to store sent bytes as we need to reset metrics for received bytes
-            context.setAttribute(CONTEXT_ATTRIBUTE_SENT_BYTES, Long.valueOf(metrics.getSentBytesCount()));
+            context.setAttribute(CONTEXT_ATTRIBUTE_SENT_BYTES, metrics.getSentBytesCount());
             context.setAttribute(CONTEXT_ATTRIBUTE_METRICS, metrics);
-            log.debug("Sent {} bytes", Long.valueOf(sentBytesCount));
+            log.debug("Sent {} bytes", sentBytesCount);
             metrics.reset();
             return response;
         }
     };
 
-    /**
-     * Headers to save
-     */
     private static final String[] HEADERS_TO_SAVE = new String[]{
                     "content-length",
                     "content-encoding",
@@ -472,11 +451,11 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
     private static final ViewableFileBody[] EMPTY_FILE_BODIES = new ViewableFileBody[0];
 
     static {
-        log.info("HTTP request retry count = {}", Integer.valueOf(RETRY_COUNT));
+        log.info("HTTP request retry count = {}", RETRY_COUNT);
 
         // Set up HTTP scheme override if necessary
         if (CPS_HTTP > 0) {
-            log.info("Setting up HTTP SlowProtocol, cps={}", Integer.valueOf(CPS_HTTP));
+            log.info("Setting up HTTP SlowProtocol, cps={}", CPS_HTTP);
             CONNECTION_SOCKET_FACTORY = new SlowHCPlainConnectionSocketFactory(CPS_HTTP);
         } else {
             CONNECTION_SOCKET_FACTORY = PlainConnectionSocketFactory.getSocketFactory();
@@ -537,7 +516,7 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
 
         if (log.isDebugEnabled()) {
             log.debug("Start : sample {} method {} followingRedirect {} depth {}",
-                    url, method, Boolean.valueOf(areFollowingRedirect), Integer.valueOf(frameDepth));
+                    url, method, areFollowingRedirect, frameDepth);
         }
         JMeterVariables jMeterVariables = JMeterContextService.getContext().getVariables();
 
@@ -642,7 +621,7 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
             if (log.isDebugEnabled()) {
                 long total = res.getHeadersSize() + res.getBodySizeAsLong();
                 log.debug("ResponseHeadersSize={} Content-Length={} Total={}",
-                        Integer.valueOf(res.getHeadersSize()), Long.valueOf(res.getBodySizeAsLong()), Long.valueOf(total));
+                        res.getHeadersSize(), res.getBodySizeAsLong(), total);
             }
 
             // If we redirected automatically, the URL may have changed
@@ -809,16 +788,11 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
      * Setup Body of request if different from GET.
      * Field HTTPSampleResult#queryString of result is modified in the 2 cases
      *
-     * @param method
-     *            String HTTP method
-     * @param result
-     *            {@link HTTPSampleResult}
-     * @param httpRequest
-     *            {@link HttpRequestBase}
-     * @param localContext
-     *            {@link HttpContext}
-     * @throws IOException
-     *             when posting data fails due to I/O
+     * @param method       String HTTP method
+     * @param result       {@link HTTPSampleResult}
+     * @param httpRequest  {@link HttpRequestBase}
+     * @param localContext {@link HttpContext}
+     * @throws IOException when posting data fails due to I/O
      */
     protected void handleMethod(String method, HTTPSampleResult result,
             HttpRequestBase httpRequest, HttpContext localContext) throws IOException {
@@ -1095,13 +1069,13 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
             }
             httpClient = builder.build();
             if (log.isDebugEnabled()) {
-                log.debug("Created new HttpClient: @{} {}", Integer.valueOf(System.identityHashCode(httpClient)), key);
+                log.debug("Created new HttpClient: @{} {}", System.identityHashCode(httpClient), key);
             }
             triple = MutableTriple.of(httpClient, null, pHCCM);
             mapHttpClientPerHttpClientKey.put(key, triple); // save the agent for next time round
         } else {
             if (log.isDebugEnabled()) {
-                log.debug("Reusing the HttpClient: @{} {}", Integer.valueOf(System.identityHashCode(httpClient)),key);
+                log.debug("Reusing the HttpClient: @{} {}", System.identityHashCode(httpClient),key);
             }
         }
 
@@ -1159,7 +1133,7 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
             JMeterVariables jMeterVariables,
             HttpClientContext clientContext,
             Map<HttpClientKey, MutableTriple<CloseableHttpClient, AuthState, PoolingHttpClientConnectionManager>> mapHttpClientPerHttpClientKey) {
-        if (resetStateOnThreadGroupIteration.get().booleanValue()) {
+        if (resetStateOnThreadGroupIteration.get()) {
             closeCurrentConnections(mapHttpClientPerHttpClientKey);
             clientContext.removeAttribute(HttpClientContext.USER_TOKEN);
             clientContext.removeAttribute(HttpClientContext.PROXY_AUTH_STATE);
@@ -1196,14 +1170,10 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
      * <li>Calls setConnectionCookie to setup Cookie</li>
      * </ul>
      *
-     * @param url
-     *            {@link URL} of the request
-     * @param httpRequest
-     *            http request for the request
-     * @param res
-     *            sample result to set cookies on
-     * @throws IOException
-     *             if hostname/ip to use could not be figured out
+     * @param url         {@link URL} of the request
+     * @param httpRequest http request for the request
+     * @param res         sample result to set cookies on
+     * @throws IOException if hostname/ip to use could not be figured out
      */
     protected void setupRequest(URL url, HttpRequestBase httpRequest, HTTPSampleResult res)
         throws IOException {
@@ -1266,8 +1236,7 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
     /**
      * Gets the ResponseHeaders
      *
-     * @param response
-     *            containing the headers
+     * @param response containing the headers
      * @return string containing the headers, one per line
      */
     private String getResponseHeaders(HttpResponse response) {
@@ -1326,14 +1295,11 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
      * Extracts all the required non-cookie headers for that particular URL request and
      * sets them in the <code>HttpMethod</code> passed in
      *
-     * @param request
-     *            <code>HttpRequest</code> which represents the request
-     * @param url
-     *            <code>URL</code> of the URL request
-     * @param headerManager
-     *            the <code>HeaderManager</code> containing all the cookies
-     *            for this <code>UrlConfig</code>
-     * @param cacheManager the CacheManager (may be null)
+     * @param request       <code>HttpRequest</code> which represents the request
+     * @param url           <code>URL</code> of the URL request
+     * @param headerManager the <code>HeaderManager</code> containing all the cookies
+     *                      for this <code>UrlConfig</code>
+     * @param cacheManager  the CacheManager (may be null)
      */
     protected void setConnectionHeaders(HttpRequestBase request, URL url, HeaderManager headerManager, CacheManager cacheManager) {
         if (headerManager != null) {
@@ -1375,11 +1341,9 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
      * Get port from the value of the Host header, or return the given
      * defaultValue
      *
-     * @param hostHeaderValue
-     *            value of the http Host header
-     * @param defaultValue
-     *            value to be used, when no port could be extracted from
-     *            hostHeaderValue
+     * @param hostHeaderValue value of the http Host header
+     * @param defaultValue    value to be used, when no port could be extracted from
+     *                        hostHeaderValue
      * @return integer representing the port for the host header
      */
     private int getPortFromHostHeader(String hostHeaderValue, int defaultValue) {
@@ -1396,8 +1360,7 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
     /**
      * Get all the request headers except Cookie for the <code>HttpRequest</code>
      *
-     * @param method
-     *            <code>HttpMethod</code> which represents the request
+     * @param method <code>HttpMethod</code> which represents the request
      * @return the headers as a string
      */
     private String getAllHeadersExceptCookie(HttpRequest method) {
@@ -1407,8 +1370,7 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
     /**
      * Get only Cookie header for the <code>HttpRequest</code>
      *
-     * @param method
-     *            <code>HttpMethod</code> which represents the request
+     * @param method <code>HttpMethod</code> which represents the request
      * @return the headers as a string
      */
     private String getOnlyCookieFromHeaders(HttpRequest method) {
@@ -1423,8 +1385,7 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
     /**
      * Get only cookies from request headers for the <code>HttpRequest</code>
      *
-     * @param method
-     *            <code>HttpMethod</code> which represents the request
+     * @param method <code>HttpMethod</code> which represents the request
      * @return the headers as a string
      */
     private String getFromHeadersMatchingPredicate(HttpRequest method, Predicate<String> predicate) {
@@ -1490,7 +1451,7 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
 
             if(log.isDebugEnabled()) {
                 log.debug("Building multipart with:getDoBrowserCompatibleMultipart(): {}, with charset:{}, haveContentEncoding:{}",
-                        Boolean.valueOf(getDoBrowserCompatibleMultipart()), charset, Boolean.valueOf(haveContentEncoding));
+                        getDoBrowserCompatibleMultipart(), charset, haveContentEncoding);
             }
             // Write the request to our own stream
             MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder.create();
@@ -1529,7 +1490,7 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
             writeEntityToSB(postedBody, entity, fileBodies, contentEncoding);
         } else { // not multipart
             // Check if the header manager had a content type header
-            // This allows the user to specify his own content-type for a POST request
+            // This allows the user to specify their own content-type for a POST request
             Header contentTypeHeader = entityEnclosingRequest.getFirstHeader(HTTPConstants.HEADER_CONTENT_TYPE);
             boolean hasContentTypeHeader = contentTypeHeader != null && contentTypeHeader.getValue() != null && contentTypeHeader.getValue().length() > 0;
             // If there are no arguments, we can send a file as the body of the request
@@ -1756,7 +1717,6 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
 
 
     /**
-     *
      * @return the value of {@link #getContentEncoding()}; forced to null if empty
      */
     private String getContentEncodingOrNull() {
@@ -1789,7 +1749,7 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
     protected void notifyFirstSampleAfterLoopRestart() {
         log.debug("notifyFirstSampleAfterLoopRestart called "
                 + "with config(httpclient.reset_state_on_thread_group_iteration={})",
-                Boolean.valueOf(RESET_STATE_ON_THREAD_GROUP_ITERATION));
+                RESET_STATE_ON_THREAD_GROUP_ITERATION);
         JMeterVariables jMeterVariables = JMeterContextService.getContext().getVariables();
         if (jMeterVariables.isSameUserOnNextIteration()) {
             log.debug("Thread Group is configured to simulate a returning visitor on each iteration, ignoring property value {}",
@@ -1798,7 +1758,7 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
         } else {
             log.debug("Thread Group is configured to simulate a new visitor on each iteration, using property value {}",
                     RESET_STATE_ON_THREAD_GROUP_ITERATION);
-            resetStateOnThreadGroupIteration.set(Boolean.valueOf(RESET_STATE_ON_THREAD_GROUP_ITERATION));
+            resetStateOnThreadGroupIteration.set(RESET_STATE_ON_THREAD_GROUP_ITERATION);
         }
         log.debug("Thread state will be reset ?: {}", RESET_STATE_ON_THREAD_GROUP_ITERATION);
     }
@@ -1809,9 +1769,6 @@ public class HTTPHC4Impl extends HTTPHCAbstractImpl {
         closeThreadLocalConnections();
     }
 
-    /**
-     *
-     */
     private void closeThreadLocalConnections() {
         // Does not need to be synchronised, as all access is from same thread
         Map<HttpClientKey, MutableTriple<CloseableHttpClient, AuthState, PoolingHttpClientConnectionManager>>

@@ -27,7 +27,6 @@ import org.apache.jorphan.math.StatCalculatorLong;
  * Aggregate sample data container. Just instantiate a new instance of this
  * class, and then call {@link #addSample(SampleResult)} a few times, and pull
  * the stats out with whatever methods you prefer.
- *
  */
 public class SamplingStatCalculator {
     private final StatCalculatorLong calculator = new StatCalculatorLong();
@@ -58,7 +57,6 @@ public class SamplingStatCalculator {
 
     /**
      * Clear the counters (useful for differential stats)
-     *
      */
     public synchronized void clear() {
         init();
@@ -171,10 +169,8 @@ public class SamplingStatCalculator {
     /**
      * Records a sample.
      *
-     * @param res
-     *            the sample to record
+     * @param res the sample to record
      * @return newly created sample with current statistics
-     *
      */
     public Sample addSample(SampleResult res) {
         long rtime;
@@ -203,8 +199,8 @@ public class SamplingStatCalculator {
             rtime = res.getTime();
             cmean = (long)calculator.getMean();
             cstdv = (long)calculator.getStandardDeviation();
-            cmedian = calculator.getMedian().longValue();
-            cpercent = calculator.getPercentPoint( 0.500 ).longValue();
+            cmedian = calculator.getMedian();
+            cpercent = calculator.getPercentPoint(0.500);
 // TODO cpercent is the same as cmedian here - why? and why pass it to "distributionLine"?
             rbool = res.isSuccessful();
         }
@@ -253,32 +249,22 @@ public class SamplingStatCalculator {
         return rval;
     }
 
-    /**
-     * For debugging purposes, only.
-     */
     @Override
     public String toString() {
-        StringBuilder mySB = new StringBuilder();
-
-        mySB.append("Samples: " + this.getCount() + "  ");
-        mySB.append("Avg: " + this.getMean() + "  ");
-        mySB.append("Min: " + this.getMin() + "  ");
-        mySB.append("Max: " + this.getMax() + "  ");
-        mySB.append("Error Rate: " + this.getErrorPercentage() + "  ");
-        mySB.append("Sample Rate: " + this.getRate());
-        return mySB.toString();
+        return "Samples: " + this.getCount() + "  " +
+                "Avg: " + this.getMean() + "  " +
+                "Min: " + this.getMin() + "  " +
+                "Max: " + this.getMax() + "  " +
+                "Error Rate: " + this.getErrorPercentage() + "  " +
+                "Sample Rate: " + this.getRate();
     }
 
-    /**
-     * @return errorCount
-     */
+    /** @return errorCount */
     public long getErrorCount() {
         return getCurrentSample().getErrorCount();
     }
 
-    /**
-     * @return Returns the maxThroughput.
-     */
+    /** @return Returns the maxThroughput. */
     public double getMaxThroughput() {
         return maxThroughput;
     }
@@ -304,7 +290,7 @@ public class SamplingStatCalculator {
     }
 
     public Number getMeanAsNumber() {
-        return Long.valueOf((long) calculator.getMean());
+        return (long) calculator.getMean();
     }
 
     public Number getMedian() {
@@ -312,8 +298,8 @@ public class SamplingStatCalculator {
     }
 
     public Number getMin() {
-        if (calculator.getMin().longValue() < 0) {
-            return Long.valueOf(0);
+        if (calculator.getMin() < 0) {
+            return 0L;
         }
         return calculator.getMin();
     }

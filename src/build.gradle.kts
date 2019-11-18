@@ -24,8 +24,21 @@ val skipMavenPublication = setOf(
     ":src:generator",
     ":src:licenses",
     ":src:protocol",
-    ":src:release"
+    ":src:release",
+    ":src:testkit",
+    ":src:testkit-wiremock"
 )
+
+fun Project.boolProp(name: String) =
+    findProperty(name)
+        // Project properties include tasks, extensions, etc, and we want only String properties
+        // We don't want to use "task" as a boolean property
+        ?.let { it as? String }
+        ?.equals("false", ignoreCase = true)?.not()
+
+val skipJavadoc by extra {
+    boolProp("skipJavadoc") ?: false
+}
 
 subprojects {
     if (path == ":src:bom") {
@@ -39,21 +52,32 @@ subprojects {
     if (groovyUsed) {
         apply<GroovyPlugin>()
     }
-    apply<MavenPublishPlugin>()
+    if (project.path !in skipMavenPublication) {
+        apply<MavenPublishPlugin>()
+    }
     apply<JacocoPlugin>()
 
     dependencies {
+        val api by configurations
+        api(platform(project(":src:bom")))
+
         if (!testsPresent) {
             // No tests => no dependencies required
             return@dependencies
         }
         val testImplementation by configurations
         val testRuntimeOnly by configurations
+        testImplementation("org.junit.jupiter:junit-jupiter-api")
+        testImplementation("org.junit.jupiter:junit-jupiter-params")
+        testImplementation("org.hamcrest:hamcrest")
+        testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+        testRuntimeOnly("org.junit.vintage:junit-vintage-engine")
         testImplementation("junit:junit")
+        testImplementation(testFixtures(project(":src:testkit")))
         if (groovyUsed) {
             testImplementation("org.spockframework:spock-core")
         }
-        testRuntimeOnly("cglib:cglib-nodep:3.2.9") {
+        testRuntimeOnly("cglib:cglib-nodep") {
             because("""
                 org.spockframework.mock.CannotCreateMockException: Cannot create mock for
                  class org.apache.jmeter.report.processor.AbstractSummaryConsumer${'$'}SummaryInfo.
@@ -110,23 +134,25 @@ subprojects {
     }
     setProperty("archivesBaseName", archivesBaseName)
 
+    if (project.path in skipMavenPublication) {
+        return@subprojects
+    }
     // See https://stackoverflow.com/a/53661897/1261287
     // Subprojects can't use "publishing" since that accessor is not available at parent project
     // evaluation time
     configure<PublishingExtension> {
-        if (project.path in skipMavenPublication) {
-            return@configure
-        }
         publications {
             create<MavenPublication>(project.name) {
                 artifactId = archivesBaseName
                 version = rootProject.version.toString()
                 from(components["java"])
 
-                // Eager task creation is required due to
-                // https://github.com/gradle/gradle/issues/6246
-                artifact(sourcesJar.get())
-                artifact(javadocJar.get())
+                if (!skipJavadoc) {
+                    // Eager task creation is required due to
+                    // https://github.com/gradle/gradle/issues/6246
+                    artifact(sourcesJar.get())
+                    artifact(javadocJar.get())
+                }
 
                 // Use the resolved versions in pom.xml
                 // Gradle might have different resolution rules, so we set the versions

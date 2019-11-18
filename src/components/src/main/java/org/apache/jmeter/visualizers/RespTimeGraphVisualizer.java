@@ -9,17 +9,13 @@
  *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed  under the  License is distributed on an "AS IS" BASIS,
- * WITHOUT  WARRANTIES OR CONDITIONS  OF ANY KIND, either  express  or
- * implied.
- *
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-
-/**
  *
  */
+
 package org.apache.jmeter.visualizers;
 
 import java.awt.BorderLayout;
@@ -54,7 +50,6 @@ import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -306,44 +301,41 @@ public class RespTimeGraphVisualizer extends AbstractVisualizer implements Actio
         if ((matcher == null) || (matcher.find())) {
             final long startTimeMS = sampleResult.getStartTime();
             final long startTimeInterval = startTimeMS / intervalValue;
-            JMeterUtils.runSafe(false, new Runnable() {
-                @Override
-                public void run() {
-                    synchronized (lock) {
-                        // Use for x-axis scale
-                        if (startTimeInterval < minStartTime) {
-                            minStartTime = startTimeInterval;
-                        } else if (startTimeInterval > maxStartTime) {
-                            maxStartTime = startTimeInterval;
+            JMeterUtils.runSafe(false, () -> {
+                synchronized (lock) {
+                    // Use for x-axis scale
+                    if (startTimeInterval < minStartTime) {
+                        minStartTime = startTimeInterval;
+                    } else if (startTimeInterval > maxStartTime) {
+                        maxStartTime = startTimeInterval;
+                    }
+                    // Generate x-axis label and associated color
+                    if (!seriesNames.containsKey(sampleLabel)) {
+                        seriesNames.put(sampleLabel,
+                                new RespTimeGraphLineBean(sampleLabel, listColors.get(colorIdx++)));
+                        // reset colors index
+                        if (colorIdx >= listColors.size()) {
+                            colorIdx = 0;
                         }
-                        // Generate x-axis label and associated color
-                        if (!seriesNames.containsKey(sampleLabel)) {
-                            seriesNames.put(sampleLabel,
-                                    new RespTimeGraphLineBean(sampleLabel, listColors.get(colorIdx++)));
-                            // reset colors index
-                            if (colorIdx >= listColors.size()) {
-                                colorIdx = 0;
-                            }
+                    }
+                    // List of value by sampler
+                    Map<Long, StatCalculatorLong> subList = pList.get(sampleLabel);
+                    final Long startTimeIntervalLong = startTimeInterval;
+                    if (subList != null) {
+                        long respTime = sampleResult.getTime();
+                        StatCalculatorLong value = subList.get(startTimeIntervalLong);
+                        if (value==null) {
+                            value = new StatCalculatorLong();
+                            subList.put(startTimeIntervalLong, value);
                         }
-                        // List of value by sampler
-                        Map<Long, StatCalculatorLong> subList = pList.get(sampleLabel);
-                        final Long startTimeIntervalLong = Long.valueOf(startTimeInterval);
-                        if (subList != null) {
-                            long respTime = sampleResult.getTime();
-                            StatCalculatorLong value = subList.get(startTimeIntervalLong);
-                            if (value==null) {
-                                value = new StatCalculatorLong();
-                                subList.put(startTimeIntervalLong, value);
-                            }
-                            value.addValue(respTime, 1);
-                        } else {
-                            // We want to retain insertion order, so LinkedHashMap is necessary
-                            Map<Long, StatCalculatorLong> newSubList = new LinkedHashMap<>(5);
-                            StatCalculatorLong helper = new StatCalculatorLong();
-                            helper.addValue(Long.valueOf(sampleResult.getTime()),1);
-                            newSubList.put(startTimeIntervalLong,  helper);
-                            pList.put(sampleLabel, newSubList);
-                        }
+                        value.addValue(respTime, 1);
+                    } else {
+                        // We want to retain insertion order, so LinkedHashMap is necessary
+                        Map<Long, StatCalculatorLong> newSubList = new LinkedHashMap<>(5);
+                        StatCalculatorLong helper = new StatCalculatorLong();
+                        helper.addValue(Long.valueOf(sampleResult.getTime()),1);
+                        newSubList.put(startTimeIntervalLong,  helper);
+                        pList.put(sampleLabel, newSubList);
                     }
                 }
             });
@@ -380,15 +372,15 @@ public class RespTimeGraphVisualizer extends AbstractVisualizer implements Actio
         graphPanel.setColor(getLinesColors());
         graphPanel.setShowGrouping(numberShowGrouping.isSelected());
         graphPanel.setLegendPlacement(StatGraphProperties.getPlacementNameMap()
-                .get(legendPlacementList.getSelectedItem()).intValue());
+                .get(legendPlacementList.getSelectedItem()));
         graphPanel.setPointShape(StatGraphProperties.getPointShapeMap().get(pointShapeLine.getSelectedItem()));
         graphPanel.setStrokeWidth(Float.parseFloat((String) strokeWidthList.getSelectedItem()));
 
         graphPanel.setTitleFont(new Font(StatGraphProperties.getFontNameMap().get(titleFontNameList.getSelectedItem()),
-                StatGraphProperties.getFontStyleMap().get(titleFontStyleList.getSelectedItem()).intValue(),
+                StatGraphProperties.getFontStyleMap().get(titleFontStyleList.getSelectedItem()),
                 Integer.parseInt((String) titleFontSizeList.getSelectedItem())));
         graphPanel.setLegendFont(new Font(StatGraphProperties.getFontNameMap().get(fontNameList.getSelectedItem()),
-                StatGraphProperties.getFontStyleMap().get(fontStyleList.getSelectedItem()).intValue(),
+                StatGraphProperties.getFontStyleMap().get(fontStyleList.getSelectedItem()),
                 Integer.parseInt((String) fontSizeList.getSelectedItem())));
 
         graphPanel.setHeight(height);
@@ -416,7 +408,7 @@ public class RespTimeGraphVisualizer extends AbstractVisualizer implements Actio
             int idx = 0;
             while (idx < durationTest) {
                 long keyShift = minStartTime + idx;
-                StatCalculatorLong value = subList.get(Long.valueOf(keyShift));
+                StatCalculatorLong value = subList.get(keyShift);
                 if (value != null) {
                     nanLast = value.getMean();
                     data[s][idx] = nanLast;
@@ -435,7 +427,7 @@ public class RespTimeGraphVisualizer extends AbstractVisualizer implements Actio
                         nanList.clear();
                     }
                 } else {
-                    nanList.add(Double.valueOf(Double.NaN));
+                    nanList.add(Double.NaN);
                     nanBegin = nanLast;
                     data[s][idx] = Double.NaN;
                 }
@@ -501,21 +493,17 @@ public class RespTimeGraphVisualizer extends AbstractVisualizer implements Actio
         tabbedGraph.addTab(JMeterUtils.getResString("aggregate_graph_tab_graph"), graphPanel); //$NON-NLS-1$
 
         // If clic on the Graph tab, make the graph (without apply interval or filter)
-        ChangeListener changeListener = new ChangeListener() {
-            @Override
-            public void stateChanged(ChangeEvent changeEvent) {
-                JTabbedPane srcTab = (JTabbedPane) changeEvent.getSource();
-                int index = srcTab.getSelectedIndex();
-                if (srcTab.getTitleAt(index).equals(JMeterUtils.getResString("aggregate_graph_tab_graph"))) { //$NON-NLS-1$
-                    actionMakeGraph();
-                }
+        ChangeListener changeListener = changeEvent -> {
+            JTabbedPane srcTab = (JTabbedPane) changeEvent.getSource();
+            int index = srcTab.getSelectedIndex();
+            if (srcTab.getTitleAt(index).equals(JMeterUtils.getResString("aggregate_graph_tab_graph"))) { //$NON-NLS-1$
+                actionMakeGraph();
             }
         };
         tabbedGraph.addChangeListener(changeListener);
 
         this.add(mainPanel, BorderLayout.NORTH);
         this.add(tabbedGraph, BorderLayout.CENTER);
-
     }
 
     @Override
@@ -534,7 +522,7 @@ public class RespTimeGraphVisualizer extends AbstractVisualizer implements Actio
                 log.error(e.getMessage());
             }
         } else if (eventSource == syncWithName) {
-            graphTitle.setText(namePanel.getName());
+            graphTitle.setText(getName());
         } else if (eventSource == dynamicGraphSize) {
                 enableDynamicGraph(dynamicGraphSize.isSelected());
         } else if (eventSource == samplerSelection) {

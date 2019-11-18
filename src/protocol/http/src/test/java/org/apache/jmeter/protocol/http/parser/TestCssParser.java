@@ -18,6 +18,9 @@
 
 package org.apache.jmeter.protocol.http.parser;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.junit.Assert.assertThat;
 
 import java.net.MalformedURLException;
@@ -28,7 +31,7 @@ import java.util.List;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.jmeter.junit.JMeterTestCase;
 import org.hamcrest.CoreMatchers;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class TestCssParser extends JMeterTestCase {
 
@@ -45,19 +48,19 @@ public class TestCssParser extends JMeterTestCase {
     public void testGetEmbeddedResourceURLsNoUrls() throws Exception {
         CssParser nonIgnoreParser = new CssParser();
         List<?> result = extractUrls(nonIgnoreParser, "..");
-        assertThat(result.isEmpty(), CoreMatchers.is(true));
+        assertThat(result, is(empty()));
     }
 
     @Test
     public void testGetEmbeddedResourceURLsnOneUrl() throws Exception {
-        List<?> result;
-        result = extractUrls("@import url(http://example.com/abc.css);");
-        assertThat(result.isEmpty(), CoreMatchers.is(false));
+        List<?> result = extractUrls("@import url(http://example.com/abc.css);");
+        assertThat(result, is(not(empty())));
     }
 
-    @Test(expected=LinkExtractorParseException.class)
+    @Test
     public void testExtractUrlsFromBrokenData() throws Exception {
-        extractUrls(CSS_IN_ERROR);
+        List<?> result = extractUrls(CSS_IN_ERROR);
+        assertThat(result, is(empty()));
     }
 
     @Test
@@ -79,4 +82,3 @@ public class TestCssParser extends JMeterTestCase {
         return result;
     }
 }
-

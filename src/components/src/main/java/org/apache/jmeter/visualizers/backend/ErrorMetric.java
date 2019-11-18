@@ -65,10 +65,10 @@ public class ErrorMetric {
     }
 
     /**
-     * @return the response message , 'none' if he code is empty
+     * @return the response message, 'none' if the code is empty
      */
     public String getResponseMessage() {
-        if (responseMessage.isEmpty()) {
+        if (responseMessage == null || responseMessage.isEmpty()) {
             return "None";
         } else {
             return responseMessage.trim();

@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  */
+
 package org.apache.jmeter.report.core;
 
 import org.apache.commons.lang3.StringUtils;
@@ -148,7 +149,7 @@ public class Sample {
      * @return the time stamp
      */
     public long getTimestamp() {
-        return getData(long.class, CSVSaveService.TIME_STAMP).longValue();
+        return getData(long.class, CSVSaveService.TIME_STAMP);
     }
 
     /**
@@ -157,7 +158,7 @@ public class Sample {
      * @return the elapsed time stored in the sample
      */
     public long getElapsedTime() {
-        return getData(long.class, CSVSaveService.CSV_ELAPSED).longValue();
+        return getData(long.class, CSVSaveService.CSV_ELAPSED);
     }
 
     /**
@@ -242,7 +243,7 @@ public class Sample {
      * @return the latency stored in the sample
      */
     public long getLatency() {
-        return getData(long.class, CSVSaveService.CSV_LATENCY).longValue();
+        return getData(long.class, CSVSaveService.CSV_LATENCY);
     }
 
     /**
@@ -252,7 +253,7 @@ public class Sample {
      */
     public long getConnectTime() {
         if(metadata.indexOf(CSVSaveService.CSV_CONNECT_TIME) >= 0) {
-            return getData(long.class, CSVSaveService.CSV_CONNECT_TIME).longValue();
+            return getData(long.class, CSVSaveService.CSV_CONNECT_TIME);
         } else {
             return 0L;
         }
@@ -264,7 +265,7 @@ public class Sample {
      * @return the success status stored in the sample
      */
     public boolean getSuccess() {
-        return getData(boolean.class, CSVSaveService.SUCCESSFUL).booleanValue();
+        return getData(boolean.class, CSVSaveService.SUCCESSFUL);
     }
 
     /**
@@ -273,7 +274,7 @@ public class Sample {
      * @return the number of received bytes stored in the sample
      */
     public long getReceivedBytes() {
-        return getData(long.class, CSVSaveService.CSV_BYTES).longValue();
+        return getData(long.class, CSVSaveService.CSV_BYTES);
     }
 
     /**
@@ -283,7 +284,7 @@ public class Sample {
      */
     public long getSentBytes() {
         if(metadata.indexOf(CSVSaveService.CSV_SENT_BYTES) >= 0) {
-            return getData(long.class, CSVSaveService.CSV_SENT_BYTES).longValue();
+            return getData(long.class, CSVSaveService.CSV_SENT_BYTES);
         } else {
             return 0L;
         }
@@ -295,7 +296,7 @@ public class Sample {
      * @return the number of threads in the group of this sample
      */
     public int getGroupThreads() {
-        return getData(int.class, CSVSaveService.CSV_THREAD_COUNT1).intValue();
+        return getData(int.class, CSVSaveService.CSV_THREAD_COUNT1);
     }
 
     /**
@@ -304,7 +305,7 @@ public class Sample {
      * @return the overall number of threads
      */
     public int getAllThreads() {
-        return getData(int.class, CSVSaveService.CSV_THREAD_COUNT2).intValue();
+        return getData(int.class, CSVSaveService.CSV_THREAD_COUNT2);
     }
 
     /**

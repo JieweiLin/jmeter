@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  */
+
 package org.apache.jmeter.sampler;
 
 import java.util.Arrays;
@@ -159,8 +160,8 @@ public class TestAction extends AbstractSampler implements Interruptible {
                 long adjustDelay = TIMER_SERVICE.adjustDelay(millis);
                 if (log.isDebugEnabled()) {
                     log.debug("Sleeping in Flow Control Action for {} ms (asked for {} ms)",
-                            Long.valueOf(adjustDelay),
-                            Long.valueOf(millis));
+                            adjustDelay,
+                            millis);
                 }
                 TimeUnit.MILLISECONDS.sleep(adjustDelay);
             } else if (millis < 0) {

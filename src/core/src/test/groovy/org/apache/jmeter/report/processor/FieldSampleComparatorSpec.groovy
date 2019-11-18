@@ -15,17 +15,18 @@
  * limitations under the License.
  *
  */
+
 package org.apache.jmeter.report.processor
 
 import org.apache.jmeter.report.core.Sample
 import org.apache.jmeter.report.core.SampleMetadata
+
 import spock.lang.Specification
 
 class FieldSampleComparatorSpec extends Specification {
 
     static char separator = ',' as char
     def multiColSampleMeta = new SampleMetadata(separator, "col1", "col2")
-
 
     def testCompare() {
         given:

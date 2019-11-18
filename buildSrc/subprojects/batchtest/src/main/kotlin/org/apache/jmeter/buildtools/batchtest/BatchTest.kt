@@ -25,8 +25,12 @@ import org.eclipse.jgit.diff.RawTextComparator
 import org.eclipse.jgit.util.io.AutoCRLFInputStream
 import org.gradle.api.GradleException
 import org.gradle.api.model.ObjectFactory
-import org.gradle.api.tasks.*
-import org.gradle.kotlin.dsl.configure
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.JavaExec
 import org.gradle.kotlin.dsl.property
 import java.io.File
 import java.net.InetAddress
@@ -107,18 +111,16 @@ open class BatchTest @Inject constructor(objects: ObjectFactory) : JavaExec() {
     init {
         group = BATCH_TESTS_GROUP_NAME
         description = "Runs jmx file via process fork and verifies outputs"
-        configure {
-            workingDir = File(project.rootDir, "bin")
-            main = "org.apache.jmeter.NewDriver"
-            classpath(jmeterJar)
+        workingDir = File(project.rootDir, "bin")
+        main = "org.apache.jmeter.NewDriver"
+        classpath(jmeterJar)
 
-            // This does not depend on the task configuration, so the properties are initialized early
-            // It enables to override the properties later (e.g. in the build script)
-            maxHeapSize = "128m"
-            jvmArgs("-Xss256k", "-XX:MaxMetaspaceSize=128m")
-            systemProperty("java.rmi.server.hostname", InetAddress.getLocalHost().canonicalHostName)
-            systemProperty("java.awt.headless", "true")
-        }
+        // This does not depend on the task configuration, so the properties are initialized early
+        // It enables to override the properties later (e.g. in the build script)
+        maxHeapSize = "128m"
+        jvmArgs("-Xss256k", "-XX:MaxMetaspaceSize=128m")
+        systemProperty("java.rmi.server.hostname", InetAddress.getLocalHost().canonicalHostName)
+        systemProperty("java.awt.headless", "true")
     }
 
     fun jmeterArgument(name: String, value: String) {
@@ -151,7 +153,7 @@ open class BatchTest @Inject constructor(objects: ObjectFactory) : JavaExec() {
         val diffAlgorithm = DiffAlgorithm.getAlgorithm(DiffAlgorithm.SupportedAlgorithm.HISTOGRAM)
         val edits = diffAlgorithm.diff(RawTextComparator.DEFAULT, e, a)
         DiffFormatter(System.out).format(edits, e, a)
-        return false;
+        return false
     }
 
     override fun exec() {

@@ -20,7 +20,7 @@ dependencies {
     api(project(":src:core"))
     testCompile(project(":src:core", "testClasses"))
 
-    api("org.apache-extras.beanshell:bsh:2.0b6") {
+    api("org.apache-extras.beanshell:bsh") {
         because("""
             BeanShell is not required for JMeter, however it is commonly used in the jmx scripts.
             New scripts should refrain from using BeanShell though and migrate to Groovy or other
@@ -28,7 +28,7 @@ dependencies {
         """.trimIndent())
     }
 
-    api("javax.mail:mail:1.5.0-b01") {
+    api("javax.mail:mail") {
         exclude("javax.activation", "activation")
     }
     // There's no javax.activation:activation:1.2.0, so we use com.sun...
@@ -36,14 +36,16 @@ dependencies {
     // This is an API-only jar. javax.activation is present in Java 8,
     // however it is not there in Java 9
     compileOnly("javax.activation:javax.activation-api")
-
     implementation("com.github.ben-manes.caffeine:caffeine")
+    implementation("io.burt:jmespath-core")
+    implementation("io.burt:jmespath-jackson")
     implementation("jcharts:jcharts")
     implementation("oro:oro")
     implementation("net.minidev:json-smart")
     implementation("net.minidev:accessors-smart")
     implementation("org.apache.commons:commons-pool2")
     implementation("commons-codec:commons-codec")
+    implementation("org.ow2.asm:asm")
     implementation("org.jodd:jodd-log")
     implementation("org.jodd:jodd-lagarto")
     implementation("com.jayway.jsonpath:json-path")
@@ -68,6 +70,8 @@ dependencies {
     testRuntimeOnly("org.bouncycastle:bcmail-jdk15on")
     testRuntimeOnly("org.bouncycastle:bcpkix-jdk15on")
     testRuntimeOnly("org.bouncycastle:bcprov-jdk15on")
+    testImplementation("nl.jqno.equalsverifier:equalsverifier")
+    testImplementation(testFixtures(project(":src:testkit-wiremock")))
 }
 
 fun String?.toBool(nullAs: Boolean, blankAs: Boolean, default: Boolean) =
@@ -78,12 +82,20 @@ fun String?.toBool(nullAs: Boolean, blankAs: Boolean, default: Boolean) =
         else -> equals("true", ignoreCase = true)
     }
 
+fun classExists(name: String) =
+    try {
+        Class.forName(name)
+        true
+    } catch (e: Throwable) {
+        false
+    }
+
 if (!(project.findProperty("enableJavaFx") as? String)
-        .toBool(nullAs = false, blankAs = true, default = false)
+        .toBool(nullAs = classExists("javafx.application.Platform"), blankAs = true, default = false)
 ) {
     // JavaFX is not present in Maven Central, so exclude the file unless explicitly asked by
     // -PenableJavaFx
-    logger.debug("RenderInBrowser is excluded from compilation. If you want to compile it, add -PenableJavaFx")
+    logger.lifecycle("RenderInBrowser is excluded from compilation. If you want to compile it, add -PenableJavaFx")
     sourceSets {
         main {
             java {

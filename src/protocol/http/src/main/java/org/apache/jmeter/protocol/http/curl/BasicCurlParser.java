@@ -57,63 +57,68 @@ import org.slf4j.LoggerFactory;
  */
 public class BasicCurlParser {
     private static final Logger LOGGER = LoggerFactory.getLogger(BasicCurlParser.class);
-    private static final int METHOD_OPT = 'X';
-    private static final int COMPRESSED_OPT      = 'c';// $NON-NLS-1$
-    private static final int HEADER_OPT      = 'H';// $NON-NLS-1$
-    private static final int DATA_OPT      = 'd';// $NON-NLS-1$
-    private static final int DATA_ASCII_OPT = "data-ascii".hashCode();// $NON-NLS-1$
-    private static final int DATA_BINARY_OPT = "data-binary".hashCode();// NOSONAR
-    private static final int DATA_URLENCODE_OPT = "data-urlencode".hashCode();// NOSONAR
-    private static final int DATA_RAW_OPT = "data-raw".hashCode();// NOSONAR
-    private static final int FORM_OPT = 'F';// $NON-NLS-1$
-    private static final int FORM_STRING_OPT = "form".hashCode();// $NON-NLS-1$
-    private static final int USER_AGENT_OPT = 'A';// $NON-NLS-1$
-    private static final int CONNECT_TIMEOUT_OPT = "connect-timeout".hashCode();// $NON-NLS-1$
-    private static final int COOKIE_OPT = 'b';// $NON-NLS-1$
-    private static final int USER_OPT = 'u';// $NON-NLS-1$
-    private static final int BASIC_OPT = "basic".hashCode();// NOSONAR
-    private static final int DIGEST_OPT = "digest".hashCode();// NOSONAR
-    private static final int CERT_OPT = 'E';// $NON-NLS-1$
-    private static final int CAFILE_OPT = "cacert".hashCode();// $NON-NLS-1$
-    private static final int CAPATH_OPT = "capath".hashCode();// $NON-NLS-1$
-    private static final int CIPHERS_OPT = "ciphers".hashCode();// $NON-NLS
-    private static final int CERT_STATUS_OPT = "cert-status".hashCode();// $NON-NLS-1$-1$
-    private static final int CERT_TYPE_OPT = "cert-type".hashCode();// $NON-NLS-1$-1$
-    private static final int KEY_OPT = "key".hashCode();// $NON-NLS-1$-1$
-    private static final int KEY_TYPE_OPT = "key-type".hashCode();// $NON-NLS-1$-1$
-    private static final int GET_OPT = 'G';// $NON-NLS-1$
-    private static final int DNS_OPT = "dns-servers".hashCode();// $NON-NLS-1$
-    private static final int NO_KEEPALIVE_OPT = "no-keepalive".hashCode();// $NON-NLS-1$
-    private static final int REFERER_OPT = 'e';// $NON-NLS-1$
-    private static final int LOCATION_OPT = 'L';// $NON-NLS-1$
-    private static final int INCLUDE_OPT = 'i';// $NON-NLS-1$
-    private static final int HEAD_OPT = 'I';// $NON-NLS-1$
-    private static final int PROXY_OPT = 'x';// $NON-NLS-1$
-    private static final int PROXY_USER_OPT = 'U';// $NON-NLS-1$
-    private static final int PROXY_NTLM_OPT = "proxy-ntlm".hashCode();// $NON-NLS-1$
-    private static final int PROXY_NEGOTIATE_OPT = "proxy-negotiate".hashCode();// $NON-NLS-1$
-    private static final int KEEPALIVETILE_OPT = "keepalive-time".hashCode();// $NON-NLS-1$
-    private static final int MAX_TIME_OPT = 'm';// $NON-NLS-1$
-    private static final int OUTPUT_OPT = 'o';// $NON-NLS-1$
-    private static final int CREATE_DIRS_OPT = "create-dir".hashCode();// $NON-NLS-1$
-    private static final int INSECURE_OPT = 'k';// $NON-NLS-1$
-    private static final int RAW_OPT = "raw".hashCode();// $NON-NLS-1$
-    private static final int INTERFACE_OPT = "interface".hashCode();// $NON-NLS-1$
-    private static final int DNS_RESOLVER_OPT = "resolve".hashCode();// $NON-NLS-1$
-    private static final int LIMIT_RATE_OPT = "limit-rate".hashCode();// $NON-NLS-1$
-    private static final int MAX_REDIRS_OPT = "max-redirs".hashCode();// $NON-NLS-1$
-    private static final int NOPROXY_OPT = "noproxy".hashCode();// $NON-NLS-1$
-    private static final List<Integer> AUTH_OPT = Arrays.asList(BASIC_OPT, DIGEST_OPT);// $NON-NLS-1$
-    private static final List<Integer> SSL_OPT = Arrays.asList(CAFILE_OPT, CAPATH_OPT, CERT_OPT, CIPHERS_OPT,
-            CERT_STATUS_OPT, CERT_TYPE_OPT, KEY_OPT, KEY_TYPE_OPT);// $NON-NLS-1$
-    private static final List<Integer> DATAS_OPT = Arrays.asList(DATA_OPT, DATA_ASCII_OPT, DATA_BINARY_OPT,
-            DATA_URLENCODE_OPT, DATA_RAW_OPT);// $NON-NLS-1$
-    private static final List<Integer> FORMS_OPT = Arrays.asList(FORM_OPT, FORM_STRING_OPT);// $NON-NLS-1$
-    private static final List<Integer> IGNORE_OPTIONS_OPT = Arrays.asList(OUTPUT_OPT, CREATE_DIRS_OPT, RAW_OPT,
-            INCLUDE_OPT, KEEPALIVETILE_OPT);// $NON-NLS-1$
-    private static final List<Integer> NOSUPPORT_OPTIONS_OPT = Arrays.asList(PROXY_NTLM_OPT, PROXY_NEGOTIATE_OPT);// $NON-NLS-1$
-    private static final List<Integer> PROPERTIES_OPT = Arrays.asList(MAX_REDIRS_OPT);// $NON-NLS-1$
-    private static final List<String> DYNAMIC_COOKIES = Arrays.asList("PHPSESSID", "JSESSIONID", "ASPSESSIONID",
+
+    private static final int METHOD_OPT                 = 'X';// $NON-NLS-1$
+    private static final int COMPRESSED_OPT             = 'c';// $NON-NLS-1$
+    private static final int HEADER_OPT                 = 'H';// $NON-NLS-1$
+    private static final int DATA_OPT                   = 'd';// $NON-NLS-1$
+    private static final int DATA_ASCII_OPT             = "data-ascii".hashCode();// $NON-NLS-1$
+    private static final int DATA_BINARY_OPT            = "data-binary".hashCode();// NOSONAR
+    private static final int DATA_URLENCODE_OPT         = "data-urlencode".hashCode();// NOSONAR
+    private static final int DATA_RAW_OPT               = "data-raw".hashCode();// NOSONAR
+    private static final int FORM_OPT                   = 'F';// $NON-NLS-1$
+    private static final int FORM_STRING_OPT            = "form".hashCode();// $NON-NLS-1$
+    private static final int USER_AGENT_OPT             = 'A';// $NON-NLS-1$
+    private static final int CONNECT_TIMEOUT_OPT        = "connect-timeout".hashCode();// $NON-NLS-1$
+    private static final int COOKIE_OPT                 = 'b';// $NON-NLS-1$
+    private static final int USER_OPT                   = 'u';// $NON-NLS-1$
+    private static final int BASIC_OPT                  = "basic".hashCode();// NOSONAR
+    private static final int DIGEST_OPT                 = "digest".hashCode();// NOSONAR
+    private static final int CERT_OPT                   = 'E';// $NON-NLS-1$
+    private static final int CAFILE_OPT                 = "cacert".hashCode();// $NON-NLS-1$
+    private static final int CAPATH_OPT                 = "capath".hashCode();// $NON-NLS-1$
+    private static final int CIPHERS_OPT                = "ciphers".hashCode();// $NON-NLS
+    private static final int CERT_STATUS_OPT            = "cert-status".hashCode();// $NON-NLS-1$-1$
+    private static final int CERT_TYPE_OPT              = "cert-type".hashCode();// $NON-NLS-1$-1$
+    private static final int KEY_OPT                    = "key".hashCode();// $NON-NLS-1$-1$
+    private static final int KEY_TYPE_OPT               = "key-type".hashCode();// $NON-NLS-1$-1$
+    private static final int GET_OPT                    = 'G';// $NON-NLS-1$
+    private static final int DNS_OPT                    = "dns-servers".hashCode();// $NON-NLS-1$
+    private static final int NO_KEEPALIVE_OPT           = "no-keepalive".hashCode();// $NON-NLS-1$
+    private static final int REFERER_OPT                = 'e';// $NON-NLS-1$
+    private static final int LOCATION_OPT               = 'L';// $NON-NLS-1$
+    private static final int INCLUDE_OPT                = 'i';// $NON-NLS-1$
+    private static final int HEAD_OPT                   = 'I';// $NON-NLS-1$
+    private static final int PROXY_OPT                  = 'x';// $NON-NLS-1$
+    private static final int PROXY_USER_OPT             = 'U';// $NON-NLS-1$
+    private static final int PROXY_NTLM_OPT             = "proxy-ntlm".hashCode();// $NON-NLS-1$
+    private static final int PROXY_NEGOTIATE_OPT        = "proxy-negotiate".hashCode();// $NON-NLS-1$
+    private static final int KEEPALIVETILE_OPT          = "keepalive-time".hashCode();// $NON-NLS-1$
+    private static final int MAX_TIME_OPT               = 'm';// $NON-NLS-1$
+    private static final int OUTPUT_OPT                 = 'o';// $NON-NLS-1$
+    private static final int CREATE_DIRS_OPT            = "create-dir".hashCode();// $NON-NLS-1$
+    private static final int INSECURE_OPT               = 'k';// $NON-NLS-1$
+    private static final int RAW_OPT                    = "raw".hashCode();// $NON-NLS-1$
+    private static final int INTERFACE_OPT              = "interface".hashCode();// $NON-NLS-1$
+    private static final int DNS_RESOLVER_OPT           = "resolve".hashCode();// $NON-NLS-1$
+    private static final int LIMIT_RATE_OPT             = "limit-rate".hashCode();// $NON-NLS-1$
+    private static final int MAX_REDIRS_OPT             = "max-redirs".hashCode();// $NON-NLS-1$
+    private static final int NOPROXY_OPT                = "noproxy".hashCode();// $NON-NLS-1$
+    private static final int URL_OPT                    = "url".hashCode(); // $NON-NLS-1$
+    private static final int VERBOSE_OPT                = 'v';// $NON-NLS-1$
+    private static final int SILENT_OPT                 = 's';// $NON-NLS-1$
+
+    private static final List<Integer> AUTH_OPT              = Arrays.asList(BASIC_OPT, DIGEST_OPT);
+    private static final List<Integer> SSL_OPT               = Arrays.asList(CAFILE_OPT, CAPATH_OPT, CERT_OPT, CIPHERS_OPT,
+            CERT_STATUS_OPT, CERT_TYPE_OPT, KEY_OPT, KEY_TYPE_OPT);
+    private static final List<Integer> DATAS_OPT             = Arrays.asList(DATA_OPT, DATA_ASCII_OPT, DATA_BINARY_OPT,
+            DATA_URLENCODE_OPT, DATA_RAW_OPT);
+    private static final List<Integer> FORMS_OPT             = Arrays.asList(FORM_OPT, FORM_STRING_OPT);
+    private static final List<Integer> IGNORE_OPTIONS_OPT    = Arrays.asList(OUTPUT_OPT, CREATE_DIRS_OPT, RAW_OPT,
+            INCLUDE_OPT, KEEPALIVETILE_OPT, VERBOSE_OPT, SILENT_OPT);
+    private static final List<Integer> NOSUPPORT_OPTIONS_OPT = Arrays.asList(PROXY_NTLM_OPT, PROXY_NEGOTIATE_OPT);
+    private static final List<Integer> PROPERTIES_OPT        = Arrays.asList(MAX_REDIRS_OPT);
+    private static final List<String> DYNAMIC_COOKIES        = Arrays.asList("PHPSESSID", "JSESSIONID", "ASPSESSIONID",
             "connect.sid");// $NON-NLS-1$
 
     public static final class Request {
@@ -217,6 +222,7 @@ public class BasicCurlParser {
         public void setCookieInHeaders(String cookieInHeaders) {
             this.cookieInHeaders = cookieInHeaders;
         }
+
         /**
          * @return the url
          */
@@ -525,6 +531,7 @@ public class BasicCurlParser {
             return builder.toString();
         }
     }
+
     private static final CLOptionDescriptor D_COMPRESSED_OPT =
             new CLOptionDescriptor("compressed", CLOptionDescriptor.ARGUMENT_DISALLOWED, COMPRESSED_OPT,
                     "Request compressed response (using deflate or gzip)");
@@ -532,7 +539,7 @@ public class BasicCurlParser {
             new CLOptionDescriptor("header", CLOptionDescriptor.ARGUMENT_REQUIRED | CLOptionDescriptor.DUPLICATES_ALLOWED, HEADER_OPT,
                     "Pass custom header LINE to server");
     private static final CLOptionDescriptor D_METHOD_OPT =
-            new CLOptionDescriptor("command", CLOptionDescriptor.ARGUMENT_REQUIRED, METHOD_OPT,
+            new CLOptionDescriptor("request", CLOptionDescriptor.ARGUMENT_REQUIRED, METHOD_OPT,
                     "Pass custom header LINE to server");
     private static final CLOptionDescriptor D_DATA_OPT =
             new CLOptionDescriptor("data", CLOptionDescriptor.ARGUMENT_REQUIRED, DATA_OPT,
@@ -561,6 +568,8 @@ public class BasicCurlParser {
             "Sends the 'Referer Page' information to the HTTP server ");
     private static final CLOptionDescriptor D_COOKIE_OPT = new CLOptionDescriptor("cookie",
             CLOptionDescriptor.ARGUMENT_REQUIRED, COOKIE_OPT, "Pass the data to the HTTP server as a cookie");
+    private static final CLOptionDescriptor D_URL_OPT = new CLOptionDescriptor("url",
+            CLOptionDescriptor.ARGUMENT_REQUIRED, URL_OPT, "url");
     private static final CLOptionDescriptor D_USER_OPT = new CLOptionDescriptor("user",
             CLOptionDescriptor.ARGUMENT_REQUIRED, USER_OPT, "User and password to use for server authentication. ");
     private static final CLOptionDescriptor D_BASIC_OPT = new CLOptionDescriptor("basic",
@@ -646,22 +655,26 @@ public class BasicCurlParser {
     private static final CLOptionDescriptor D_NOPROXY = new CLOptionDescriptor("noproxy",
             CLOptionDescriptor.ARGUMENT_REQUIRED, NOPROXY_OPT,
             "Comma-separated list of hosts which do not use a proxy, if one is specified. ");
-
+    private static final CLOptionDescriptor D_SILENT = new CLOptionDescriptor("silent",
+            CLOptionDescriptor.ARGUMENT_OPTIONAL, SILENT_OPT, "silent mode");
+    private static final CLOptionDescriptor D_VERBOSE = new CLOptionDescriptor("verbose",
+            CLOptionDescriptor.ARGUMENT_OPTIONAL, VERBOSE_OPT, "verbose mode");
     private static final Pattern deleteLinePattern = Pattern.compile("\r|\n|\r\n");
 
     private static final CLOptionDescriptor[] OPTIONS = new CLOptionDescriptor[] {
             D_COMPRESSED_OPT,D_HEADER_OPT, D_METHOD_OPT,D_DATA_OPT, D_DATA_ASCII_OPT, D_DATA_URLENCODE_OPT, D_DATA_RAW_OPT, D_DATA_BINARY_OPT,
-            D_FORM_OPT, D_FORM_STRING_OPT, D_USER_AGENT_OPT, D_CONNECT_TIMEOUT_OPT, D_COOKIE_OPT, D_USER_OPT,
+            D_FORM_OPT, D_FORM_STRING_OPT, D_USER_AGENT_OPT, D_CONNECT_TIMEOUT_OPT, D_COOKIE_OPT, D_URL_OPT, D_USER_OPT,
             D_BASIC_OPT, D_DIGEST_OPT, D_CACERT_OPT, D_CAPATH_OPT, D_CERT_OPT, D_CERT_STATUS_OPT, D_CERT_TYPE_OPT,
             D_CIPHERS_OPT, D_KEY_OPT, D_KEY_TYPE_OPT, D_GET_OPT, D_DNS_SERVERS_OPT, D_NO_KEEPALIVE_OPT, D_REFERER_OPT,
             D_LOCATION_OPT, D_INCLUDE_OPT, D_INSECURE_OPT, D_HEAD_OPT, D_PROXY_OPT, D_PROXY_USER_OPT, D_PROXY_NTLM_OPT,
             D_PROXY_NEGOTIATE_OPT, D_KEEPALIVETILE_OPT, D_MAX_TIME_OPT, D_OUTPUT_OPT, D_CREATE_DIRS_OPT, D_RAW_OPT,
-            D_INTERFACE_OPT, D_DNS_RESOLVER_OPT, D_LIMIT_RATE_OPT, D_MAX_REDIRS ,D_NOPROXY
+            D_INTERFACE_OPT, D_DNS_RESOLVER_OPT, D_LIMIT_RATE_OPT, D_MAX_REDIRS ,D_NOPROXY, D_VERBOSE, D_SILENT
     };
 
     public BasicCurlParser() {
         super();
     }
+
     public Request parse(String commandLine) {
         String[] args = translateCommandline(commandLine);
         CLArgsParser parser = new CLArgsParser(args, OPTIONS);
@@ -671,11 +684,8 @@ public class BasicCurlParser {
             List<CLOption> clOptions = parser.getArguments();
             Request request = new Request();
             for (CLOption option : clOptions) {
-                if (option.getDescriptor().getId() == CLOption.TEXT_ARGUMENT) {
-                    // Curl or URL
-                    if (!"CURL".equalsIgnoreCase(option.getArgument())) {
-                        request.setUrl(option.getArgument());
-                    }
+                if (option.getDescriptor().getId() == URL_OPT) {
+                    request.setUrl(option.getArgument());
                 } else if (option.getDescriptor().getId() == COMPRESSED_OPT) {
                     request.setCompressed(true);
                 } else if (option.getDescriptor().getId() == HEADER_OPT) {
@@ -710,7 +720,7 @@ public class BasicCurlParser {
                     request.addHeader("Referer", option.getArgument(0));
                 } else if (option.getDescriptor().getId() == CONNECT_TIMEOUT_OPT) {
                     String value = option.getArgument(0);
-                    request.setConnectTimeout(Double.valueOf(value) * 1000);
+                    request.setConnectTimeout(Double.parseDouble(value) * 1000);
                 } else if (option.getDescriptor().getId() == COOKIE_OPT) {
                     String value = option.getArgument(0);
                     if (isValidCookie(value)) {
@@ -744,7 +754,7 @@ public class BasicCurlParser {
                     setProxyServerUserInfo(request, value);
                 } else if (option.getDescriptor().getId() == MAX_TIME_OPT) {
                     String value = option.getArgument(0);
-                    request.setMaxTime(Double.valueOf(value) * 1000);
+                    request.setMaxTime(Double.parseDouble(value) * 1000);
                 } else if (option.getDescriptor().getId() == HEAD_OPT) {
                     request.setMethod("HEAD");
                 } else if (option.getDescriptor().getId() == INTERFACE_OPT) {
@@ -766,11 +776,17 @@ public class BasicCurlParser {
                 } else if (PROPERTIES_OPT.contains(option.getDescriptor().getId())) {
                     request.addOptionsInProperties(
                             "--" + option.getDescriptor().getName() + " is in 'httpsampler.max_redirects(1062 line)'");
+                } else if (option.getDescriptor().getId() == CLOption.TEXT_ARGUMENT
+                        && !"CURL".equalsIgnoreCase(option.getArgument())) {
+                    try {
+                        request.setUrl(new URL(option.getArgument()).toExternalForm());
+                    } catch (MalformedURLException ex) {
+                        LOGGER.warn("Unhandled option {}", option.getArgument());
+                    }
                 }
             }
             if (isPostToGet) {
-                String url = request.getUrl();
-                url += "?" + request.getPostData();
+                String url = request.getUrl() + "?" + request.getPostData();
                 request.setUrl(url);
                 request.setPostData(null);
                 request.setMethod("GET");
@@ -784,6 +800,7 @@ public class BasicCurlParser {
 
     /**
      * Crack a command line.
+     *
      * @param toProcess the command line to process.
      * @return the command line broken into strings.
      * An empty or null toProcess parameter results in a zero sized array.
@@ -848,8 +865,8 @@ public class BasicCurlParser {
         }
         return result.toArray(new String[result.size()]);
     }
+
     /**
-    *
     * Set the username , password and baseurl of authorization
     *
     * @param authentication   the username and password of authorization
@@ -864,7 +881,6 @@ public class BasicCurlParser {
    }
 
    /**
-    *
     * Set the mechanism of authorization
     *
     * @param mechanism     the mechanism of authorization
@@ -884,30 +900,23 @@ public class BasicCurlParser {
    }
 
    /**
-    *
     * Set the parameters of proxy server in http request advanced
     *
-    * @param request         http request
+    * @param request                       http request
     * @param originalProxyServerParameters the parameters of proxy server
-    *
     */
    private void setProxyServer(Request request, String originalProxyServerParameters) {
        String proxyServerParameters = originalProxyServerParameters;
        if (!proxyServerParameters.contains("://")) {
            proxyServerParameters = "http://" + proxyServerParameters;
        }
-       URI uriProxy = null;
        try {
-           uriProxy = new URI(proxyServerParameters);
-            request.setProxyServer("scheme", uriProxy.getScheme());
-            Optional<String> userInfoOptional = Optional.ofNullable(uriProxy.getUserInfo());
-            if (userInfoOptional.isPresent()) {
-                setProxyServerUserInfo(request, userInfoOptional.get());
-            }
-            Optional<String> hostOptional = Optional.ofNullable(uriProxy.getHost());
-            if (hostOptional.isPresent()) {
-               request.setProxyServer("servername", hostOptional.get());
-           }
+           URI uriProxy = new URI(proxyServerParameters);
+           request.setProxyServer("scheme", uriProxy.getScheme());
+           Optional<String> userInfoOptional = Optional.ofNullable(uriProxy.getUserInfo());
+           userInfoOptional.ifPresent(s -> setProxyServerUserInfo(request, s));
+           Optional<String> hostOptional = Optional.ofNullable(uriProxy.getHost());
+           hostOptional.ifPresent(s -> request.setProxyServer("servername", s));
            if (uriProxy.getPort() != -1) {
                request.setProxyServer("port", String.valueOf(uriProxy.getPort()));
            } else {
@@ -960,7 +969,6 @@ public class BasicCurlParser {
     *
     * @param postdata the post data
     * @return the result of encoding
-    *
     */
     private String encodePostdata(String postdata) {
         if (postdata.contains("@")) {
@@ -1016,12 +1024,6 @@ public class BasicCurlParser {
        }
    }
 
-   /**
-    * Delete line break
-    *
-    * @param postdata the post data
-    * @return the string without break line
-    */
     private static String deleteLineBreak(String postdata) {
         Matcher m = deleteLinePattern.matcher(postdata);
         return m.replaceAll("");

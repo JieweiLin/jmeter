@@ -15,6 +15,7 @@
  * limitations under the License.
  *
  */
+
 package org.apache.jmeter.report.processor.graph;
 
 import org.apache.jmeter.report.core.Sample;
@@ -40,7 +41,7 @@ public class SuccessfulElapsedTimeValueSelector extends ElapsedTimeValueSelector
     @Override
     public Double select(String series, Sample sample) {
         if(!sample.isController() && sample.getSuccess()) {
-            return Double.valueOf(sample.getElapsedTime());
+            return (double) sample.getElapsedTime();
         } else {
             return null;
         }
